@@ -1,0 +1,2143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Возвраты — Replio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --border: #e5e7eb; --border-strong: #d1d5db;
+    --text: #111827; --muted: #6b7280; --muted-2: #9ca3af;
+    --accent: #4f46e5; --accent-hover: #4338ca; --accent-soft: #eef2ff;
+    --warn: #f59e0b; --warn-soft: #fef3c7; --ok: #10b981; --ok-soft: #d1fae5;
+    --danger: #ef4444; --danger-soft: #fee2e2;
+    --mp-wb: #8b5cf6; --mp-ym: #f59e0b; --mp-ozon: #3b82f6;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar { width: 240px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+  .brand { padding: 18px 20px; font-weight: 600; font-size: 19px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+  .brand-mark { width: 28px; height: 28px; background: var(--text); color: #fff; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .nav { padding: 10px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 15.5px; cursor: pointer; margin-bottom: 2px; transition: background 0.15s ease, color 0.15s ease; color: #374151; font-weight: 500; }
+  .nav-item:hover { background: #f3f4f6; color: var(--text); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-item .count { margin-left: auto; background: var(--danger); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; line-height: 1.4; }
+  .sidebar-bottom { padding: 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #ddd6fe; color: #5b21b6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .user-meta strong { font-size: 14.5px; display: block; font-weight: 600; line-height: 1.2; }
+  .user-meta small { color: var(--muted); font-size: 12.5px; }
+
+  .main { flex: 1; min-width: 0; }
+  .topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 14px 26px; display: flex; align-items: center; gap: 14px; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .page-title { font-size: 20px; font-weight: 700; white-space: nowrap; letter-spacing: -0.02em; }
+  .search { flex: 1; max-width: 500px; position: relative; }
+  .search input { width: 100%; height: 42px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 0 16px 0 42px; font-size: 15px; background: #fafafa; outline: none; font-family: inherit; transition: all 0.15s ease; }
+  .search input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .search::before { content: ""; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E"); background-size: contain; opacity: 0.7; }
+
+  .btn { height: 42px; border: 1px solid var(--border-strong); background: var(--panel); border-radius: 10px; padding: 0 16px; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; color: var(--text); white-space: nowrap; font-weight: 500; transition: all 0.15s ease; }
+  .btn:hover { background: #f3f4f6; border-color: var(--muted); }
+  .btn:active { transform: translateY(1px); }
+  .btn.small { height: 36px; padding: 0 12px; font-size: 14px; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+  .auto-toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 14.5px; color: var(--muted); cursor: pointer; user-select: none; padding: 6px 10px; border-radius: 8px; transition: background 0.15s ease; font-weight: 500; }
+  .auto-toggle:hover { background: #f3f4f6; color: var(--text); }
+  .toggle-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 20px; cursor: pointer; transition: background 0.2s ease; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: transform 0.2s ease; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  .filters-block { background: var(--panel); border-bottom: 1px solid var(--border); padding: 14px 26px; }
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 1560px; margin: 0 auto; }
+  .filter-btn { height: 40px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; font-size: 14.5px; cursor: pointer; background: #fff; color: var(--text); font-family: inherit; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.15s ease; }
+  .filter-btn:hover { background: #f3f4f6; border-color: var(--muted); }
+  .filter-btn.has-value { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .filter-btn .badge-count { background: var(--accent); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 10px; line-height: 1.3; }
+  .filter-reset-btn {
+    background: transparent; border: none; color: var(--muted); font-size: 14px; cursor: pointer;
+    padding: 8px 12px; font-family: inherit; font-weight: 500; text-decoration: underline;
+    transition: color 0.15s; margin-left: 4px; white-space: nowrap;
+  }
+  .filter-reset-btn:hover { color: var(--text); }
+
+  .summary-inline { display: inline-flex; align-items: center; gap: 14px; padding: 0 14px; height: 40px; border-left: 1px solid var(--border); margin-left: 6px; flex-wrap: wrap; }
+  .summary-tag { display: inline-flex; align-items: center; gap: 5px; background: #f3f4f6; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; padding: 3px 9px; border-radius: 8px; }
+  .summary-item { display: inline-flex; align-items: baseline; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .summary-item b { color: var(--text); font-size: 15.5px; font-weight: 700; line-height: 1; }
+  .summary-item.danger b { color: var(--danger); }
+  .summary-item.ok b { color: var(--ok); }
+
+  .popover { display: none; position: fixed; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); min-width: 280px; z-index: 999; animation: popIn 0.15s cubic-bezier(0.16, 1, 0.3, 1); }
+  @keyframes popIn { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  .popover.visible { display: block; }
+  .popover-head { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .popover-options { display: flex; flex-direction: column; gap: 3px; }
+  .opt { padding: 9px 11px; border-radius: 8px; cursor: pointer; font-size: 15px; display: flex; align-items: center; gap: 10px; user-select: none; transition: background 0.1s ease; font-weight: 400; }
+  .opt:hover { background: #f3f4f6; }
+  .opt.on { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .opt .check { width: 19px; height: 19px; border-radius: 5px; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; color: transparent; transition: all 0.15s ease; }
+  .opt.on .check { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .opt .hint-count { margin-left: auto; background: #f3f4f6; color: #4b5563; font-size: 12.5px; font-weight: 600; padding: 2px 8px; border-radius: 8px; min-width: 26px; text-align: center; }
+  .opt.on .hint-count { background: rgba(79, 70, 229, 0.15); color: var(--accent); }
+  .popover-reset {
+    display: block; width: 100%; margin-top: 10px; padding: 8px 12px;
+    border: none; border-top: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 13px; font-family: inherit;
+    cursor: pointer; text-align: center; font-weight: 500; transition: color 0.15s;
+  }
+  .popover-reset:hover { color: var(--accent); }
+
+  .workspace { max-width: 1560px; margin: 0 auto; padding: 20px 26px 80px; }
+
+  .claims-table-wrap { background: transparent; border: none; border-radius: 0; box-shadow: none; overflow: visible; }
+  .claims-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+  .claims-table thead th { text-align: left; padding: 10px 16px; background: transparent; border: none; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  .claims-table tbody tr { cursor: pointer; }
+
+  .claims-table tbody td {
+    padding: 14px 16px;
+    vertical-align: middle;
+    font-size: 15px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: none;
+    border-right: none;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .claims-table tbody td:first-child {
+    border-left: 4px solid transparent;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+    padding-left: 12px;
+  }
+  .claims-table tbody td:last-child {
+    border-right: 1px solid var(--border);
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+  .claims-table tbody tr.row-mp-wb td:first-child { border-left-color: var(--mp-wb); }
+  .claims-table tbody tr.row-mp-ym td:first-child { border-left-color: var(--mp-ym); }
+  .claims-table tbody tr.row-mp-ozon td:first-child { border-left-color: var(--mp-ozon); }
+
+  .claims-table tbody tr:hover td { background: #f9fafb; }
+  .claims-table tbody tr.active td { background: var(--accent-soft); border-color: var(--accent); }
+  .claims-table tbody tr.active:hover td { background: #e0e7ff; }
+  .product-cell { display: flex; gap: 12px; align-items: center; min-width: 0; }
+  .product-cell .photo { width: 68px; height: 90px; border-radius: 8px; background: #fff; border: 1px solid var(--border); padding: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .product-cell .photo img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 6px; }
+  .product-cell-info { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+  .product-cell-info .name { font-size: 15.5px; font-weight: 600; color: var(--text); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-cell-info .ids { font-size: 14px; color: var(--muted); display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
+  .product-cell-info .ids .mp-pill { margin-right: 2px; }
+  .product-cell-info .ids a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .product-cell-info .ids a:hover { text-decoration: underline; }
+  .product-cell-info .ids .no-link { color: var(--text); font-weight: 500; }
+
+  /* Пилюли маркетплейсов */
+  .mp-pill { display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 7px; border-radius: 6px; line-height: 1.2; color: #fff; white-space: nowrap; }
+  .mp-pill.mp-wb { background: var(--mp-wb); color: #fff; }
+  .mp-pill.mp-ym { background: #fef3c7; color: #92400e; } /* Для контраста */
+  .mp-pill.mp-ozon { background: var(--mp-ozon); color: #fff; }
+
+  .date-cell { font-size: 15.5px; color: var(--text); font-weight: 500; }
+  .date-cell .time { display: block; font-size: 13.5px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .date-cell .rel-line { display: block; font-size: 13px; font-weight: 400; margin-top: 2px; color: var(--muted-2); }
+  .date-cell .rel-line.recent { color: #059669; }
+  .date-cell .rel-line.old { color: #d97706; }
+  .date-cell .rel-line.very-old { color: #b91c1c; }
+  .date-cell .rel-line b { font-weight: 700; font-size: 13.5px; }
+
+  .deadline-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 8px; margin-top: 6px; white-space: nowrap; line-height: 1.3; }
+  .deadline-chip.safe { background: #f3f4f6; color: #4b5563; }
+  .deadline-chip.soon { background: var(--warn-soft); color: #92400e; }
+  .deadline-chip.today { background: var(--danger-soft); color: #991b1b; }
+
+  .reason-cell, .comment-cell { font-size: 15px; line-height: 1.45; color: var(--text); }
+  .reason-cell .lbl { font-size: 11px; color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.6px; font-weight: 700; display: block; margin-bottom: 4px; }
+  .reason-cell .reason-text { color: #1f2937; font-weight: 500; }
+  .comment-cell { color: #4b5563; font-style: italic; }
+
+  .row-actions { display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center; height: 108px; }
+  .icon-btn-sm { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border-strong); background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 13.5px; padding: 0; flex-shrink: 0; transition: all 0.15s ease; color: var(--text); }
+  .icon-btn-sm:hover { background: #f3f4f6; border-color: var(--muted); transform: translateY(-1px); }
+  .icon-btn-sm.has-badge { position: relative; }
+  .icon-btn-sm .badge { position: absolute; top: -5px; right: -5px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
+  .icon-btn-sm.analytics { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+  .icon-btn-sm.analytics:hover { background: #fef3c7; border-color: #d97706; }
+  .icon-btn-sm.note-btn { border-color: #fcd34d; background: #fffbeb; color: #92400e; }
+  .icon-btn-sm.note-btn:hover { background: #fef3c7; border-color: #d97706; }
+
+  .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.4); z-index: 1000; animation: fadeIn 0.2s ease; }
+  .drawer-backdrop.visible { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 720px; max-width: 100vw; background: #fff; box-shadow: -12px 0 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1001; }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head { padding: 14px 22px; display: flex; align-items: center; justify-content: flex-end; flex-shrink: 0; min-height: 52px; border-bottom: 1px solid var(--border); background: #fafbfc; }
+  .drawer-head .close-x { background: transparent; border: none; cursor: pointer; font-size: 24px; line-height: 1; width: 32px; height: 32px; border-radius: 8px; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: all 0.15s ease; }
+  .drawer-head .close-x:hover { background: #f3f4f6; color: var(--text); }
+  .drawer-body { flex: 1; overflow-y: auto; }
+  .drawer-footer { padding: 16px 22px; background: #fff; border-top: 1px solid var(--border); box-shadow: 0 -4px 16px rgba(0,0,0,0.03); flex-shrink: 0; }
+
+  .drawer-section { padding: 18px 22px; border-bottom: 1px solid var(--border); }
+  .drawer-section:first-child { padding-top: 16px; }
+  .drawer-section:last-child { border-bottom: none; }
+  .section-title { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+
+  .drawer-product { display: flex; gap: 14px; align-items: flex-start; }
+  .drawer-product .photo { width: 72px; height: 96px; border-radius: 8px; background: #fff; border: 1px solid var(--border); padding: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .drawer-product .photo img { width: 100%; height: 100%; object-fit: contain; display: block; border-radius: 6px; }
+  .drawer-product-info { flex: 1; min-width: 0; }
+  .drawer-product-info .name { font-size: 16.5px; font-weight: 600; line-height: 1.35; margin-bottom: 8px; color: var(--text); }
+  .drawer-product-info .meta-row { font-size: 14px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+  .drawer-product-info .meta-row .summary-line { font-size: 13.5px; color: var(--muted); margin-top: 4px; }
+  .drawer-product-info .meta-row .summary-line strong { color: var(--text); font-weight: 600; }
+  .drawer-product-info .meta-row .summary-line .rel-inline.recent { color: #059669; }
+  .drawer-product-info .meta-row .summary-line .rel-inline.old { color: #d97706; }
+  .drawer-product-info .meta-row .summary-line .rel-inline.very-old { color: #b91c1c; }
+  .drawer-product-info .meta-row .summary-line .rel-inline b { font-weight: 700; }
+  .drawer-product-info .meta-row .summary-line .meta-dot { margin: 0 5px; color: var(--muted-2); }
+
+  .quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px dashed var(--border); }
+  .quick-actions .btn { flex: 1 1 0; justify-content: center; min-width: 0; }
+  .quick-actions .btn.primary { flex: 1 1 100%; }
+  .empty-hint { font-size: 13px; color: var(--muted-2); line-height: 1.55; padding: 4px 0; }
+  .empty-hint .sep { margin: 0 6px; }
+  .drawer-product-info .meta-row a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .drawer-product-info .meta-row a:hover { text-decoration: underline; }
+  .drawer-product-info .meta-row .no-link { color: var(--text); font-weight: 500; }
+
+  .drawer-product-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip-xs { display: inline-flex; align-items: center; gap: 5px; background: #f3f4f6; color: #4b5563; font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 8px; white-space: nowrap; }
+  .chip-xs.analytics { background: #fffbeb; color: #92400e; cursor: pointer; border: 1px solid #fcd34d; transition: all 0.15s ease; font-family: inherit; }
+  .chip-xs.analytics:hover { background: #fef3c7; border-color: #d97706; transform: translateY(-1px); }
+  .chip-xs.note-chip { cursor: pointer; border: 1px solid var(--border-strong); background: #fff; transition: all 0.15s ease; font-family: inherit; }
+  .chip-xs.note-chip:hover { background: #fffbeb; border-color: #fcd34d; color: #92400e; }
+  .chip-xs.note-chip.filled { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+  .chip-xs.mp-chip { border: none; }
+  .chip-xs.mp-chip.mp-wb { background: var(--mp-wb); color: #fff; }
+  .chip-xs.mp-chip.mp-ym { background: #fef3c7; color: #92400e; }
+  .chip-xs.mp-chip.mp-ozon { background: var(--mp-ozon); color: #fff; }
+
+  /* Лейбл маркетплейса в drawer */
+  .mp-label { display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 9px; border-radius: 6px; line-height: 1.2; text-transform: uppercase; white-space: nowrap; }
+  .mp-label.mp-wb { background: var(--mp-wb); color: #fff; }
+  .mp-label.mp-ym { background: #fef3c7; color: #92400e; }
+  .mp-label.mp-ozon { background: var(--mp-ozon); color: #fff; }
+
+  /* Дедлайн — контурный стиль */
+  .chip-xs.deadline-safe { background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; }
+  .chip-xs.deadline-soon { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+  .chip-xs.deadline-today { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+  
+  /* Единый стиль бренда (как в Отзывах и Вопросах) */
+  .chip-xs.brand-ragex { background: #f0fdfa; color: #0f766e; border: 1px solid #5eead4; }
+  .chip-xs.brand-holt { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
+  .chip-xs.brand-toros { background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; }
+
+  .note-preview { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; margin-top: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; cursor: pointer; transition: all 0.15s ease; }
+  .note-preview:hover { background: #fef3c7; border-color: #fcd34d; }
+  .note-preview .np-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .note-preview .np-text { flex: 1; font-size: 14px; color: #78350f; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .note-preview .np-edit { font-size: 12px; flex-shrink: 0; opacity: 0.6; margin-top: 1px; font-weight: 500; }
+
+  .claim-dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .dash-item { background: #fafbfc; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .dash-item .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 5px; display: block; }
+  .dash-item .val { font-size: 16.5px; color: var(--text); font-weight: 600; }
+  .dash-item .val .time { color: var(--muted); font-weight: 400; font-size: 14.5px; }
+  .dash-item .val .rel-inline { color: var(--muted-2); font-weight: 400; font-size: 14px; }
+  .dash-item .val .rel-inline.recent { color: #059669; }
+  .dash-item .val .rel-inline.old { color: #d97706; }
+  .dash-item .val .rel-inline.very-old { color: #b91c1c; }
+  .dash-item .val .rel-inline b { font-weight: 700; }
+
+  .media-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+  .media-thumb { width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); display: block; cursor: zoom-in; background: #f3f4f6; padding: 0; transition: all 0.15s ease; }
+  .media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .media-thumb:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+  .kv-block { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .kv-block:last-child { margin-bottom: 0; }
+  .kv-block .k { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+  .kv-block .v { font-size: 15.5px; color: #1f2937; line-height: 1.55; white-space: pre-wrap; }
+
+  .linked-block { display: flex; flex-direction: column; gap: 8px; }
+  .linked-item { display: flex; align-items: center; gap: 12px; background: #f9fafb; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; cursor: pointer; transition: all 0.15s ease; }
+  .linked-item:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .linked-item .link-info { flex: 1; min-width: 0; }
+  .linked-item .link-title { font-size: 14.5px; font-weight: 600; margin-bottom: 2px; color: var(--text); }
+  .linked-item .link-meta { font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .linked-item .link-arrow { color: var(--muted); }
+
+  .review-rating { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .review-rating.bad { background: var(--danger-soft); color: #991b1b; }
+  .review-rating.warn { background: var(--warn-soft); color: #92400e; }
+  .chip-mini { display: inline-block; background: var(--accent-soft); color: var(--accent); font-size: 10.5px; font-weight: 600; padding: 2px 6px; border-radius: 5px; margin-left: 6px; vertical-align: middle; }
+
+  .chat-block { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+  .chat-head { padding: 12px 16px; background: #fafbfc; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .chat-head .chat-avatar { width: 32px; height: 32px; border-radius: 50%; background: #ddd6fe; color: #5b21b6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .chat-head .chat-title { font-weight: 600; font-size: 14.5px; flex: 1; }
+  .chat-tools-btn { width: 30px; height: 30px; border-radius: 7px; border: 1px solid var(--border-strong); background: #fff; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; padding: 0; transition: background 0.15s ease; }
+  .chat-tools-btn:hover { background: #f3f4f6; }
+  .chat-body { max-height: 280px; overflow-y: auto; padding: 14px 16px; background: #f9fafb; display: flex; flex-direction: column; gap: 10px; }
+  .chat-msg { display: flex; flex-direction: column; gap: 3px; max-width: 78%; }
+  .chat-msg.buyer { align-self: flex-start; }
+  .chat-msg.seller { align-self: flex-end; }
+  .chat-msg .bubble { padding: 9px 13px; font-size: 14.5px; line-height: 1.5; border-radius: 14px; white-space: pre-wrap; word-wrap: break-word; }
+  .chat-msg.buyer .bubble { background: #fff; border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .chat-msg.seller .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+  .chat-msg .time { font-size: 11px; color: var(--muted-2); padding: 0 4px; }
+  .chat-msg.seller .time { text-align: right; }
+  .chat-input-row { padding: 10px 12px; background: #fff; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input-row textarea { flex: 1; min-height: 42px; max-height: 120px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 10px 14px; font-size: 14.5px; font-family: inherit; line-height: 1.45; resize: none; outline: none; transition: border-color 0.15s ease; }
+  .chat-input-row textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .chat-send { height: 42px; padding: 0 18px; border-radius: 10px; background: var(--accent); color: #fff; border: none; cursor: pointer; font-weight: 600; font-family: inherit; font-size: 14.5px; transition: background 0.15s ease; }
+  .chat-send:hover { background: var(--accent-hover); }
+
+  .chat-empty { padding: 24px 20px; text-align: center; color: var(--muted); font-size: 14.5px; }
+  .chat-empty .icon { font-size: 32px; display: block; margin-bottom: 8px; opacity: 0.5; }
+
+  .footer-decision-btn { width: 100%; height: 46px; border: none; background: var(--accent); color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s ease, transform 0.1s ease; box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25); }
+  .footer-decision-btn:hover { background: var(--accent-hover); }
+  .footer-decision-btn:active { transform: translateY(1px); }
+  .footer-decision-btn .arrow { font-size: 12px; opacity: 0.8; }
+
+  .footer-done { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .footer-done-icon { font-size: 20px; }
+  .footer-done-text { font-size: 14.5px; font-weight: 600; color: var(--text); flex: 1; }
+  .footer-done-badge { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .footer-done-badge.ok { background: var(--ok-soft); color: #065f46; }
+  .footer-done-badge.bad { background: var(--danger-soft); color: #991b1b; }
+
+  .next-claim-btn { width: 100%; height: 42px; margin-top: 10px; background: #fff; border: 1px solid var(--border-strong); border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--text); display: flex; align-items: center; gap: 10px; padding: 0 14px; text-align: left; transition: all 0.15s ease; }
+  .next-claim-btn:hover { background: #f9fafb; border-color: var(--accent); }
+  .next-claim-btn .next-label { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; flex-shrink: 0; }
+  .next-claim-btn .next-title { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .next-claim-btn .next-meta { font-size: 12px; color: var(--muted); flex-shrink: 0; }
+  .next-claim-btn .arrow { color: var(--muted); flex-shrink: 0; }
+
+  .decision-modal-backdrop { display: flex; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.55); z-index: 1100; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+  .decision-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); will-change: transform, opacity; }
+  .decision-modal-head { padding: 16px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: #fafbfc; }
+  .decision-modal-head h2 { font-size: 16px; font-weight: 600; flex: 1; letter-spacing: -0.01em; }
+  .decision-modal-close { background: transparent; border: none; cursor: pointer; font-size: 22px; width: 32px; height: 32px; border-radius: 6px; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 0.15s ease; }
+  .decision-modal-close:hover { background: #f3f4f6; color: var(--text); }
+  .decision-modal-body { padding: 12px 16px 16px; overflow-y: auto; }
+  .decision-modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; align-items: center; background: #fafbfc; }
+  .decision-modal-footer .btn { height: 40px; font-size: 14px; }
+
+  .decision-group + .decision-group { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .decision-group-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; padding: 6px 10px 4px; }
+  .decision-option { width: 100%; text-align: left; background: none; border: none; padding: 10px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; display: block; transition: background 0.1s ease; }
+  .decision-option:hover { background: #f3f4f6; }
+  .decision-option-title { font-size: 14.5px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .decision-option-sub { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+  .confirm-step { padding: 6px 8px 10px; }
+  .confirm-icon { font-size: 32px; text-align: center; margin-bottom: 10px; }
+  .confirm-title { font-size: 16.5px; font-weight: 600; text-align: center; margin-bottom: 6px; color: var(--text); }
+  .confirm-sub { font-size: 13.5px; color: var(--muted); text-align: center; line-height: 1.5; margin-bottom: 16px; }
+  .confirm-choice { background: #f9fafb; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 8px; }
+  .confirm-choice .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 4px; }
+  .confirm-choice .txt { font-size: 14.5px; font-weight: 600; color: var(--text); }
+
+  .comment-step-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .comment-step-sub { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.45; }
+  .comment-templates { margin-bottom: 12px; }
+  .comment-templates-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 6px; }
+  .reply-template-btn { display: block; width: 100%; text-align: left; background: #f9fafb; border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-family: inherit; font-size: 13px; cursor: pointer; margin-bottom: 5px; line-height: 1.4; transition: all 0.15s ease; }
+  .reply-template-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .reply-template-btn .short { font-weight: 600; display: block; margin-bottom: 2px; font-size: 12.5px; color: var(--text); }
+  .reply-template-btn .full { font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .template-row { display: flex; align-items: stretch; gap: 6px; margin-bottom: 5px; }
+  .template-row .reply-template-btn { flex: 1; margin-bottom: 0; }
+  .template-edit-btn { width: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.15s ease; color: var(--muted); padding: 0; }
+  .template-edit-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .template-add-btn { display: block; width: 100%; text-align: center; background: transparent; border: 1px dashed var(--border-strong); color: var(--muted); padding: 9px 12px; border-radius: 8px; font-family: inherit; font-size: 13px; cursor: pointer; margin-top: 6px; transition: all 0.15s ease; font-weight: 500; }
+  .template-add-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .template-edit-block { background: #f9fafb; border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin-bottom: 5px; }
+  .template-edit-block input, .template-edit-block textarea { width: 100%; border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 10px; font-size: 13px; font-family: inherit; outline: none; background: #fff; color: var(--text); }
+  .template-edit-block input:focus, .template-edit-block textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .template-edit-block input { margin-bottom: 6px; font-weight: 600; }
+  .template-edit-block textarea { min-height: 60px; resize: vertical; line-height: 1.4; }
+  .template-edit-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .template-edit-actions button { flex: 1; height: 32px; border-radius: 6px; border: 1px solid var(--border-strong); background: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; }
+  .template-edit-actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .template-edit-actions button.danger { background: #fff; border-color: var(--border-strong); color: var(--danger); }
+  .template-edit-actions button:hover { opacity: 0.9; }
+  .template-edit-actions button:active { transform: translateY(1px); }
+  .comment-textarea, .note-modal-textarea { width: 100%; min-height: 110px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 14px; font-size: 14.5px; font-family: inherit; line-height: 1.5; resize: vertical; outline: none; background: #fff; color: var(--text); transition: border-color 0.15s ease; }
+  .comment-textarea:focus, .note-modal-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .comment-meta { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px; color: var(--muted-2); }
+
+  .analytics-modal { background: #fff; border-radius: 14px; width: 100%; max-width: 720px; max-height: 88vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); overflow: hidden; animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .analytics-body { padding: 20px 24px; overflow-y: auto; }
+  .analytics-kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 22px; }
+  .analytics-kpi-item { background: #fafbfc; border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .analytics-kpi-item .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 4px; display: block; }
+  .analytics-kpi-item .val { font-size: 22px; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .analytics-kpi-item.warn .val { color: var(--warn); }
+  .analytics-kpi-item.ok .val { color: var(--ok); }
+  .analytics-kpi-item.danger .val { color: var(--danger); }
+  .analytics-section { margin-bottom: 22px; }
+  .analytics-section-title { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; margin-bottom: 10px; }
+  .analytics-bar-row { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--border); }
+  .analytics-bar-row:last-child { border-bottom: none; }
+  .analytics-bar-row .bar-label { font-size: 14px; color: var(--text); width: 150px; flex-shrink: 0; }
+  .analytics-bar-row .bar-wrap { flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .analytics-bar-row .bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+  .analytics-bar-row .bar-fill.warn { background: var(--warn); }
+  .analytics-bar-row .bar-fill.danger { background: var(--danger); }
+  .analytics-bar-row .bar-count { font-size: 14px; font-weight: 600; color: var(--text); width: 32px; text-align: right; flex-shrink: 0; }
+  .analytics-list { display: flex; flex-direction: column; gap: 6px; }
+  .analytics-list-row { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: #fafbfc; border-radius: 8px; font-size: 13.5px; border: 1px solid var(--border); }
+  .analytics-list-row .al-date { color: var(--muted); width: 90px; flex-shrink: 0; font-weight: 500; }
+  .analytics-list-row .al-reason { flex: 1; color: var(--text); }
+  .analytics-list-row .al-status { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0; }
+  .analytics-list-row .al-status.ok { background: var(--ok-soft); color: #065f46; }
+  .analytics-list-row .al-status.bad { background: var(--danger-soft); color: #991b1b; }
+  .analytics-list-row .al-status.wait { background: var(--warn-soft); color: #92400e; }
+  .analytics-todo { font-size: 13px; color: #1e3a8a; background: #eff6ff; padding: 14px 16px; border-radius: 10px; margin-top: 20px; line-height: 1.55; border: 1px solid #bfdbfe; }
+  .analytics-todo strong { color: #1e40af; }
+
+  .lightbox-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; padding: 40px; cursor: zoom-out; animation: fadeIn 0.15s ease; }
+  .lightbox-backdrop.visible { display: flex; }
+  .lightbox-img { max-width: 100%; max-height: 100%; border-radius: 8px; cursor: default; box-shadow: 0 20px 60px rgba(0,0,0,0.5); background: #fff; }
+  .lightbox-close { position: absolute; top: 20px; right: 20px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; border: none; font-size: 24px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: background 0.15s ease; }
+  .lightbox-close:hover { background: rgba(255,255,255,0.25); }
+
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(17, 24, 39, 0.5); z-index: 1200; align-items: flex-start; justify-content: center; padding: 60px 20px; overflow-y: auto; animation: fadeIn 0.15s ease; }
+  .modal-backdrop.visible { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 820px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 50px rgba(0,0,0,0.25); animation: popIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .modal-head { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: #fafbfc; }
+  .modal-head h2 { font-size: 18px; font-weight: 600; flex: 1; letter-spacing: -0.01em; }
+  .modal-close { background: transparent; border: none; cursor: pointer; font-size: 22px; width: 32px; height: 32px; border-radius: 6px; color: var(--muted); display: flex; align-items: center; justify-content: center; transition: background 0.15s ease; }
+  .modal-close:hover { background: #f3f4f6; color: var(--text); }
+  .modal-body { padding: 24px; overflow-y: auto; }
+
+  .rule-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .rule-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .rule-section h3 { font-size: 16.5px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; color: var(--text); }
+  .rule-section h3 .num { background: var(--accent); color: #fff; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; }
+  .rule-section p { font-size: 14.5px; color: #374151; line-height: 1.6; margin-bottom: 8px; }
+  .rule-section ul, .rule-section ol { margin-left: 20px; margin-top: 6px; font-size: 14.5px; line-height: 1.65; color: #374151; }
+  .rule-section li { margin-bottom: 6px; }
+  .rule-section .callout { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 14px; color: #1e3a8a; margin: 12px 0; line-height: 1.55; }
+  .rule-section .callout.warn { background: var(--warn-soft); border-left-color: var(--warn); color: #92400e; }
+  .rule-section .callout.ok { background: var(--ok-soft); border-left-color: var(--ok); color: #065f46; }
+  .rule-section .callout.future { background: #f9fafb; border-left-color: #9ca3af; color: #374151; }
+  .rule-section .callout.future code { background: #e5e7eb; }
+  .rule-section table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .rule-section table th, .rule-section table td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .rule-section table th { background: #f9fafb; font-weight: 600; color: #374151; }
+  .rule-section table tr:last-child td { border-bottom: none; }
+  .rule-section .mp-legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 12px 0; }
+  .rule-section .mp-legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 13.5px; color: #374151; }
+  .rule-section .mp-legend-dot { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 14.5px; font-weight: 500; z-index: 2100; opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.25); }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+  @media (max-width: 1100px) {
+    .drawer { width: 100vw; }
+    .claim-dashboard { grid-template-columns: 1fr; }
+    .claims-table thead th:nth-child(2),
+    .claims-table tbody td:nth-child(2) { display: none; }
+    .analytics-kpi { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">r</span><span>replio</span></div>
+    <nav class="nav">
+      <div class="nav-item">📊 Обзор</div>
+      <div class="nav-item">💬 Отзывы <span class="count">3052</span></div>
+      <div class="nav-item active">↩️ Возвраты <span class="count">22</span></div>
+      <div class="nav-item">💭 Чаты <span class="count">3341</span></div>
+      <div class="nav-item">❓ Вопросы <span class="count">18</span></div>
+      <div class="nav-item">📈 Аналитика</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="avatar">ЕГ</div>
+      <div class="user-meta"><strong>Егор Г.</strong><small>ЛПР · Техника</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title">Возвраты</div>
+      <div class="search"><input type="text" placeholder="Поиск по артикулу"></div>
+      <label class="auto-toggle" title="Автоматически открывать следующую заявку после решения">
+        <span class="toggle-switch">
+          <input type="checkbox" id="auto-advance-toggle" checked onchange="toggleAutoAdvance(this)">
+          <span class="toggle-slider"></span>
+        </span>
+        Автопереход
+      </label>
+      <button class="btn" onclick="openRules()">ℹ️ Обновления</button>
+      <button class="btn" onclick="render()">↻ Обновить</button>
+    </header>
+
+    <div class="filters-block">
+      <div class="filter-row">
+        <div><button class="filter-btn" id="btn-state" onclick="togglePop('pop-state', this)">Статус <span class="badge-count" id="badge-state" style="display:none">0</span></button></div>
+        <div><button class="filter-btn" id="btn-brand" onclick="togglePop('pop-brand', this)">Бренд <span class="badge-count" id="badge-brand" style="display:none">0</span></button></div>
+        <div><button class="filter-btn" id="btn-reason" onclick="togglePop('pop-reason', this)">Причина <span class="badge-count" id="badge-reason" style="display:none">0</span></button></div>
+        <div><button class="filter-btn" id="btn-mp" onclick="togglePop('pop-mp', this)">Площадка <span class="badge-count" id="badge-mp" style="display:none">0</span></button></div>
+        <div><button class="filter-btn" id="btn-period" onclick="togglePop('pop-period', this)">Период: <span id="label-period" style="margin-left: 4px;">30 дней</span></button></div>
+        <div><button class="filter-btn" id="btn-sort" onclick="togglePop('pop-sort', this)">Сортировка: <span id="sort-label-inline">По дедлайну</span></button></div>
+        <button class="filter-reset-btn" onclick="resetAllFilters()">↺ Сбросить</button>
+        <div class="summary-inline">
+          <span class="summary-tag">По фильтру</span>
+          <span class="summary-item">Ждут решения <b id="sum-waiting">0</b></span>
+          <span class="summary-item danger">Истекает сегодня <b id="sum-expiring">0</b></span>
+          <span class="summary-item ok">Решено <b id="sum-done">0</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="popover" id="pop-state">
+      <div class="popover-head">Статус заявки</div>
+      <div class="popover-options">
+        <div class="opt" data-key="state" data-val="waiting" onclick="pickFilterOpt(this)"><span class="check">✓</span>Ждёт решения <span class="hint-count"></span></div>
+        <div class="opt" data-key="state" data-val="clarify" onclick="pickFilterOpt(this)"><span class="check">✓</span>Уточняем <span class="hint-count"></span></div>
+        <div class="opt" data-key="state" data-val="approved" onclick="pickFilterOpt(this)"><span class="check">✓</span>Одобрено <span class="hint-count"></span></div>
+        <div class="opt" data-key="state" data-val="rejected" onclick="pickFilterOpt(this)"><span class="check">✓</span>Отклонено <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-brand">
+      <div class="popover-head">Бренд</div>
+      <div class="popover-options">
+        <div class="opt" data-key="brand" data-val="Ragex" onclick="pickFilterOpt(this)"><span class="check">✓</span>Ragex <span class="hint-count"></span></div>
+        <div class="opt" data-key="brand" data-val="Торос / Либерти" onclick="pickFilterOpt(this)"><span class="check">✓</span>Торос / Либерти <span class="hint-count"></span></div>
+        <div class="opt" data-key="brand" data-val="Holt" onclick="pickFilterOpt(this)"><span class="check">✓</span>Holt <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-reason">
+      <div class="popover-head">Причина возврата</div>
+      <div class="popover-options">
+        <div class="opt" data-key="reason" data-val="defect" onclick="pickFilterOpt(this)"><span class="check">✓</span>Брак / поломка <span class="hint-count"></span></div>
+        <div class="opt" data-key="reason" data-val="wrong" onclick="pickFilterOpt(this)"><span class="check">✓</span>Не то / не всё <span class="hint-count"></span></div>
+        <div class="opt" data-key="reason" data-val="notfit" onclick="pickFilterOpt(this)"><span class="check">✓</span>Не подошёл <span class="hint-count"></span></div>
+        <div class="opt" data-key="reason" data-val="change" onclick="pickFilterOpt(this)"><span class="check">✓</span>Передумал <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-mp">
+      <div class="popover-head">Площадка</div>
+      <div class="popover-options">
+        <div class="opt" data-key="marketplace" data-val="wb" onclick="pickFilterOpt(this)"><span class="check">✓</span>Wildberries <span class="hint-count"></span></div>
+        <div class="opt" data-key="marketplace" data-val="ym" onclick="pickFilterOpt(this)"><span class="check">✓</span>Яндекс Маркет <span class="hint-count"></span></div>
+        <div class="opt" data-key="marketplace" data-val="ozon" onclick="pickFilterOpt(this)"><span class="check">✓</span>Ozon <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-period">
+      <div class="popover-head">Период</div>
+      <div class="popover-options">
+        <div class="opt" data-key="period" data-val="7" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>7 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="30" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>30 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="90" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>90 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="all" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>Всё время <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-sort">
+      <div class="popover-head">Сортировка</div>
+      <div class="popover-options">
+        <div class="opt" data-key="sort" data-val="date-desc" onclick="pickSort(this)"><span class="check">✓</span>Сначала новые</div>
+        <div class="opt" data-key="sort" data-val="date-asc" onclick="pickSort(this)"><span class="check">✓</span>Сначала старые</div>
+        <div class="opt" data-key="sort" data-val="deadline" onclick="pickSort(this)"><span class="check">✓</span>По дедлайну</div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div class="claims-table-wrap">
+        <table class="claims-table">
+          <thead>
+            <tr>
+              <th style="width: 390px;">Товар</th>
+              <th style="width: 150px;">Выкуп</th>
+              <th style="width: 170px;">Заявка</th>
+              <th style="width: 190px;">Причина</th>
+              <th>Комментарий</th>
+              <th style="width: 64px; text-align: center;"></th>
+            </tr>
+          </thead>
+          <tbody id="claims-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<aside class="drawer" id="claim-drawer">
+  <div class="drawer-head"><button class="close-x" onclick="closeDrawer()">×</button></div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-footer" id="drawer-footer"></div>
+</aside>
+
+<div class="lightbox-backdrop" id="lightbox-backdrop" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">×</button>
+  <img class="lightbox-img" id="lightbox-img" alt="" onclick="event.stopPropagation()">
+</div>
+
+<div class="modal-backdrop" id="rules-modal" onclick="if(event.target===this)closeRules()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>ℹ️ Основные изменения</h2>
+      <button class="modal-close" onclick="closeRules()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="rule-section">
+        <h3><span class="num">0.1</span>Что не так с текущей версией</h3>
+        <p>Ниже — разбор текущей реализации интерфейса. Это не просто редизайн ради красоты, а перестройка логики под реальную работу менеджера потоком. Сравнивайте с прототипом.</p>
+
+        <h4>Карточки-аккордеоны вместо таблицы</h4>
+        <p>В текущей версии каждый возврат — большая карточка, на экран влезает 3–4. Чтобы понять «что горит сегодня», менеджер листает страницы и раскрывает карточки по одной. В новой версии — таблица: 15–20 заявок видны сразу, дедлайн и причина в каждой строке. Можно глазами найти «⏳ истёк» и «⏳ 2 ч.», не открывая ничего.</p>
+        <div class="callout warn"><b>Почему это критично:</b> такой интерфейс позволяет показать всё, что надо решить сегодня, отсортировать по срочности и быстро разобрать потоком.</div>
+
+        <h4>Нет дедлайна — есть только «дата создания»</h4>
+        <p>На карточке видно время создания («17 окт., 14:03»), но сколько осталось до автодобрения — неизвестно. Менеджер вынужден держать лимиты в голове. В новой версии добавляем бейдж <code>⏳ 2 ч.</code> / <code>⏳ 1 дн.</code> / <code>⏳ истёк</code> прямо в строке таблицы и в карточке, с цветовой шкалой (серый / оранжевый / красный).</p>
+        <div class="callout"><b>Техническая сложность:</b> в API возвратов поля «дедлайн» нет — только <code>dt</code> (дата создания). Дедлайн считаем сами: <code>deadline = dt + PLATFORM_DEADLINE[marketplace] * 24ч</code>.</div>
+
+        <h4>Нет автоперехода</h4>
+        <p>Текущий сценарий: «Принять решение» → модалка → подтвердил → закрылась → надо вернуться в список, найти, где остановился, скроллить, открыть следующую. Это 5+ действий на каждую заявку. В новой версии добавляем тумблер «Автопереход» в топбаре. После подтверждения drawer сам открывает следующую неразобранную заявку. В потоке из 36 заявок это сотни сэкономленных кликов в день.</p>
+
+        <h4>Статусы не соответствуют бизнес-логике</h4>
+        <p>Сейчас три статуса: <code>UNDER_REVIEW</code> / <code>APPROVED</code> / <code>REJECTED</code>. Вводим четыре статуса, добавляя <b>«Уточняем»</b>.</p>
+        <ul>
+          <li><b>Ждёт решения</b> — новая, не читали.</li>
+          <li><b>Уточняем</b> — менеджер задал вопрос покупателю в чате, ждёт ответа. Это не «ждёт решения» (площадка ещё не получила ответ), но и не финал — к заявке нужно вернуться позже.</li>
+          <li><b>Одобрено / Отклонено</b> — финал.</li>
+        </ul>
+        <p>Без этого статуса такие заявки висят в общем потоке и путаются с новыми.</p>
+
+        <h4>Нет цветового кодирования маркетплейсов</h4>
+        <p>Сейчас маркетплейс определяется только по маленькому логотипу. Логотипы WB/ЯМ/OZ похожи по форме, при быстром взгляде их сложно различить на автомате. В новой версии: цветная полоса слева на строке (WB — фиолет, ЯМ — жёлтый, OZ — синий) + пилюля <code>WB</code> / <code>YM</code> / <code>OZ</code> рядом с артикулом + чип в карточке. Менеджер видит распределение по площадкам боковым зрением.</p>
+
+        <h4>Смешанные валюты в одной колонке</h4>
+        <p>В карточках встречаем «451 ₽», «16 716 ₽», «47 Br» и просто числа без валюты («2 700 051»). Непонятно, что означает каждая цифра. Лучше просто убрать цену за товар.</p>
+
+        <h4>Фильтр «Кабинет» вместо «Площадка»</h4>
+        <p>«Кабинет» — это внутренний WB-кабинет. Для ЯМ и Ozon это понятие не работает. Делаем универсальный фильтр «Площадка» (WB / ЯМ / Ozon). Плюс расширяем набор фильтров: Статус, Бренд, Причина, Площадка, Период, Сортировка + кнопка «Сбросить».</p>
+
+        <h4>Нет фильтра «Причина» — ключевого для триажа</h4>
+        <p>Менеджеру часто нужно разбирать партиями: «покажи все браки, я посмотрю скопом» или «покажи всё, что связано с несовпадением комплектации». Этого нет. Добавляем фильтр «Причина» (Брак / Не то / Не подошёл / Передумал).</p>
+
+        <h4>Нет сводки по фильтру</h4>
+        <p>Сейчас показывается просто «578 заявок» — непонятно, сколько из них ждут, сколько горит сегодня. Выводим строку «Ждут решения N · Истекает сегодня N · Решено N». Менеджер сразу понимает объём работы.</p>
+
+        <h4>Нет быстрых действий</h4>
+        <p>Сейчас одна кнопка «Принять решение», которая открывает модалку с 6 опциями. Мы добавляем три быстрые кнопки прямо в карточке (<code>🚫 брак не обнаружен</code> / <code>📷 нужно больше фото</code> / <code>✅ одобрить и забрать</code>). Плюс полное меню для специфичных случаев (<code>🎁 одобрить без возврата</code> / <code>🔧 сервисный центр</code> / <code>💬 свой комментарий</code>). На частых кейсах менеджер не открывает меню вообще.</p>
+
+        <h4>Нет шаблонов для отказа</h4>
+        <p>При отказе со своим комментарием менеджер каждый раз пишет текст с нуля. Добавляем библиотеку шаблонов с редактированием через карандашик и сохранением в <code>localStorage</code> + кнопка «+ Новый шаблон». Плюс второй шаг подтверждения: менеджер видит, что именно уйдёт покупателю, и может вернуться к редактированию.</p>
+
+        <h4>Нет внутренних заметок</h4>
+        <p>Если менеджер узнал у поставщика «партия бракованная» — он никак не фиксирует это в интерфейсе. Знание теряется, следующий менеджер начинает с нуля. Добавляем иконку 🔒 в строке (если есть заметка) + превью в drawer'е + модалка редактирования. Заметка видна только команде.</p>
+
+        <h4>Нет аналитики по товару</h4>
+        <p>Если у товара 5+ возвратов за 30 дней — это сигнал о проблемной партии. Сейчас менеджер смотрит на одну заявку и не видит паттерн. Добавляем иконку ⚠️ при превышении порога в колонке действий + кликабельный чип «📊 N возвратов за 30 дней» в карточке. Клик открывает модалку с KPI (Всего / Ждут / Одобрено / Отклонено) и разбивкой по причинам.</p>
+
+        <h4>«Чат по этому заказу — покупатель не писал»</h4>
+        <p>Сейчас это мёртвая информация: чата нет, но и начать его нельзя (в API нет <code>createChat</code>). Заменяем на пустой state в карточке: «💬 Чат с покупателем не открыт» одной строкой, без отдельного громоздкого блока. Если покупатель напишет — чат появится с полем ввода.</p>
+
+        <h4>Поиск не игнорирует фильтры</h4>
+        <p>Если включён фильтр «Одобрены», и менеджер ищет артикул «R125-001», он найдёт только одобренные. Отклонённую не найдёт, хотя ищет вещь, а не статус. Меняем логику: при вводе в поиск фильтры отключаются, поиск идёт по всей базе. Менеджер ищет артикул, а не «артикул в подмножестве».</p>
+
+        <div class="callout ok"><b>Итого:</b> текущая версия — это «показать заявку». Новая — «обработать поток». Это разные задачи, и UI у них разный.</div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">1</span>Заявка = запрос на возврат</h3>
+        <p>Покупатель указал причину, комментарий и фото. Менеджер принимает решение. Всё, что нужно для решения, лежит на одном экране — не надо ходить в личный кабинет площадки.</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">2</span>Дедлайн на решение</h3>
+        <p>Если не вынести решение в срок — заявка <b>одобряется автоматически</b>. Дедлайн считаем сами: берём дату создания заявки (<code>dt</code>) и прибавляем лимит площадки. В API возвратов поля «дедлайн» нет, только дата создания.</p>
+        <table>
+          <tr><th>Площадка</th><th>Срок</th></tr>
+          <tr><td>Wildberries</td><td>5 дней</td></tr>
+          <tr><td>Яндекс Маркет</td><td>2 дня</td></tr>
+          <tr><td>Ozon</td><td>1 день</td></tr>
+        </table>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">3</span>Варианты решения</h3>
+        <p>Клик на «Выбрать решение» → модалка с 6 опциями → шаг подтверждения в той же модалке. После подтверждения футер показывает статус без кнопок — заявка решена. Никаких «сохранить на завтра».</p>
+        <ul>
+          <li><b>✅ Одобрить и забрать товар</b> — деньги после получения товара на складе.</li>
+          <li><b>🎁 Одобрить без возврата</b> — товар остаётся у покупателя.</li>
+          <li><b>🚫 Отклонить: брак не обнаружен</b></li>
+          <li><b>📷 Отклонить: нужно больше фото и видео</b></li>
+          <li><b>🔧 Отклонить: обратиться в сервисный центр</b></li>
+          <li><b>💬 Отклонить со своим комментарием</b></li>
+        </ul>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">4</span>Чат с покупателем</h3>
+        <p>Если по заказу уже есть чат — показываем переписку и поле ввода. Если чата нет — пишем, что диалог ещё не открыт.</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">5</span>Последние отзывы по товару</h3>
+        <p>Под чатом показываем последние 5 отзывов по этому товару с оценкой 3★ и ниже. Это контекст: если по товару уже есть негатив — возможно, покупатель писал его же. Если отзывов 3★ и ниже нет — показываем, что их нет, это тоже сигнал.</p>
+        <div class="callout warn">
+          <b>Почему нельзя показать «отзыв именно по этому заказу»:</b> в API отзывов нет <code>orderId</code>. Есть только <code>nmId</code> (товар), <code>lastOrderShkId</code> (штрихкод) и <code>lastOrderCreatedAt</code> (дата последнего заказа). Прямой связи «возврат → отзыв» нет. Поэтому — последние отзывы по товару.
+        </div>
+        <div class="callout"><b>Полезное в отзывах:</b> поле <code>orderStatus</code> (<code>buyout</code> / <code>returned</code>) — готовый сигнал. <code>isAbleReturnProductOrders</code> — можно ли запросить возврат прямо из отзыва. <code>returnProductOrdersDate</code> — дата возврата, если был.</div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">6</span>Внутренние заметки</h3>
+        <p>🔒 — заметка видна только команде. Если есть — превью под товаром, полный текст и редактирование — по клику в модалке. Небольшой значок 🔒 в строке таблицы, чтобы было видно, что заметка есть. Без этого знание теряется: следующий менеджер начнёт с нуля.</p>
+        <div class="callout"><b>Зачем:</b> менеджер узнал у поставщика, что партия бракованная — надо записать. Без этого знание теряется: следующий менеджер начнёт с нуля. В текущей версии заметок нет — и это боль.</div>
+        <div class="callout future">
+          <b>📌 На будущее:</b> если заметку кто-то отредактировал (<code>updatedAt &gt; createdAt</code>), показывать маленький бейдж «!» — чтобы привлекать внимание команды к «свежей» правке. Не «есть заметка» (это уже видно по 🔒), а «заметка изменилась, посмотри». В текущей версии бейджа нет — чтобы не создавать лишний визуальный шум.
+        </div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">7</span>Аналитика по товару</h3>
+        <p>Если у товара 5+ возвратов за 30 дней — в колонке действий появляется ⚠️ с числом, а в drawer'е — кликабельный чип «📊 N возвратов за 30 дней». Клик → модалка с KPI (Всего / Ждут / Одобрено / Отклонено), разбивкой по причинам полосками и списком заявок.</p>
+        <div class="callout"><b>Зачем:</b> менеджер смотрит на один возврат и не видит паттерн. Если по этому же товару было ещё 5 возвратов с причиной «брак» — это сигнал, что партия проблемная. Без аналитики — не заметит.</div>
+        <div class="callout future"><b>📌 На будущее:</b> аналитика задумана как единая панель по товару — возвраты, отзывы, вопросы и чаты в одном месте. Сейчас в макете только возвраты. Для отзывов и вопросов связка по <code>nmId</code> точно есть. Для чатов — через <code>nmID</code> в <code>goodCard</code>. Для заказов — по <code>srid</code> из отчётов о продажах.</div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">8</span>Маркетплейсы — цветовое кодирование</h3>
+        <p>Строки таблицы подсвечиваются цветной полосой слева в зависимости от площадки. Это позволяет менеджеру мгновенно видеть поток по маркетплейсам, не отвлекаясь на чтение текста.</p>
+        <div class="mp-legend">
+          <span class="mp-legend-item"><span class="mp-legend-dot" style="background: var(--mp-wb);"></span>Wildberries</span>
+          <span class="mp-legend-item"><span class="mp-legend-dot" style="background: var(--mp-ym);"></span>Яндекс Маркет</span>
+          <span class="mp-legend-item"><span class="mp-legend-dot" style="background: var(--mp-ozon);"></span>Ozon</span>
+        </div>
+        <p>Тот же цвет используется в пилюле маркетплейса рядом с артикулом и в чипе площадки в карточке возврата.</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">9</span>Фоновый прогрев картинок</h3>
+        <p>Менеджер работает потоком и переключается между разделами. Ждать загрузки картинок при каждом переходе — это секунды простоя. Поэтому картинки грузятся <b>заранее, в фоне</b>.</p>
+        <ul>
+          <li><b>Как только зашли на сайт</b> — стартует прогрев картинок из всех разделов: фото товаров, фото покупателей из заявок на возврат, аватарки чатов, превью отзывов. Пока читаете первый раздел — остальное уже качается.</li>
+          <li><b>Прогрев идёт тихо</b> — без спиннеров и индикаторов. Через <code>new Image()</code> в фоне — браузер сам кладёт их в кеш.</li>
+          <li><b>Не блокирует интерфейс.</b> Если сразу кликнули в «Возвраты», картинки могут грузиться на месте как обычно.</li>
+          <li><b>Только фото.</b> Видео (mp4, 5–30 MB) не прогреваем — в плитке медиа показываем плашку «🎬 Видео», сам файл грузится только при клике в лайтбоксе.</li>
+          <li><b>Два размера.</b> Маленькие превью (для плиток и drawer'а) прогреваем первыми, крупные — только при открытии лайтбокса.</li>
+          <li><b>Кеш.</b> Браузерный кеш + <code>Cache-Control</code> на стороне CDN — повторные заходы и переключения между разделами берут из кеша.</li>
+        </ul>
+        <div class="callout">
+          <b>Что это даёт:</b> зашли на сайт → 30–60 секунд работаете в «Отзывах» → переключились в «Возвраты» — фото покупателей уже на месте, без мигания и ожидания. Ощущение, что сайт «лёгкий», хотя за кулисами уже скачано несколько сотен картинок.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ PLACEHOLDER ============ */
+function makePhotoPlaceholder(w, h, label) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">
+    <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#eef2ff"/><stop offset="100%" stop-color="#e0e7ff"/></linearGradient></defs>
+    <rect width="${w}" height="${h}" fill="url(#g)"/>
+    <g transform="translate(${w/2}, ${h/2 - 15})" fill="none" stroke="#6366f1" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-40" y="-28" width="80" height="56" rx="8"/>
+      <circle cx="0" cy="0" r="18"/>
+      <circle cx="0" cy="0" r="10" fill="#6366f1" fill-opacity="0.3"/>
+    </g>
+    <text x="${w/2}" y="${h/2 + 60}" text-anchor="middle" fill="#4f46e5" font-family="-apple-system, sans-serif" font-size="${Math.round(w/22)}" font-weight="600">${label}</text>
+  </svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+/* ============ WB IMAGE ============ */
+const WB_THRESHOLDS = [[143,"01"],[287,"02"],[431,"03"],[719,"04"],[1007,"05"],[1061,"06"],[1115,"07"],[1169,"08"],[1313,"09"],[1601,"10"],[1655,"11"],[1919,"12"],[2045,"13"],[2189,"14"],[2405,"15"],[2621,"16"],[2837,"17"],[3053,"18"],[3269,"19"]];
+function getHostForVol(vol) { if (vol <= 3269) for (const [th, host] of WB_THRESHOLDS) if (vol <= th) return `basket-${host}`; return null; }
+function getFirstGuessUrl(nm) {
+  const vol = Math.floor(nm / 100000), part = Math.floor(nm / 1000);
+  const host = getHostForVol(vol);
+  if (host) return `https://${host}.wbbasket.ru/vol${vol}/part${part}/${nm}/images/big/1.webp`;
+  // Для vol > 3269 формула ненадёжна — начинаем с basket-50, перебор пойдёт через onerror
+  return `https://basket-50.wbbasket.ru/vol${vol}/part${part}/${nm}/images/big/1.webp`;
+}
+
+const IMG_RESOLVED = new Map();
+const IMG_PENDING = new Map();
+const IMG_TIMEOUT = 3000;
+const IMG_SIZES = ['big', 'c516x688', 'c246x328'];
+
+function buildWbImageCandidates(nm) {
+  const vol = Math.floor(nm / 100000), part = Math.floor(nm / 1000);
+  const urls = [], hostList = [], seen = new Set();
+  if (vol <= 3269) { const h = getHostForVol(vol); if (h) { hostList.push(h); seen.add(h); } }
+  const order = vol > 3269 ? Array.from({length: 50}, (_, i) => 50 - i) : Array.from({length: 50}, (_, i) => i + 1);
+  for (const i of order) { const h = `basket-${String(i).padStart(2, '0')}`; if (!seen.has(h)) { hostList.push(h); seen.add(h); } }
+  for (let i = 1; i <= 20; i++) { const h = `mns-basket-cdn-${String(i).padStart(2, '0')}`; if (!seen.has(h)) { hostList.push(h); seen.add(h); } }
+  for (const host of hostList) for (const size of IMG_SIZES) {
+    const suffix = host.startsWith('mns-') ? '.geobasket.net' : '.wbbasket.ru';
+    urls.push(`https://${host}${suffix}/vol${vol}/part${part}/${nm}/images/${size}/1.webp`);
+  }
+  return urls;
+}
+
+function checkImageUrl(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    const timer = setTimeout(() => { img.src = ''; resolve(false); }, IMG_TIMEOUT);
+    img.onload = () => { clearTimeout(timer); resolve(true); };
+    img.onerror = () => { clearTimeout(timer); resolve(false); };
+    img.src = url;
+  });
+}
+
+async function resolveWbImage(nm) {
+  if (!nm) return null;
+  if (IMG_RESOLVED.has(nm)) return IMG_RESOLVED.get(nm);
+  if (IMG_PENDING.has(nm)) return IMG_PENDING.get(nm);
+  const p = (async () => {
+    const cand = buildWbImageCandidates(nm);
+    for (let i = 0; i < Math.min(6, cand.length); i++) {
+      if (await checkImageUrl(cand[i])) { IMG_RESOLVED.set(nm, cand[i]); return cand[i]; }
+    }
+    for (let i = 6; i < cand.length; i += 9) {
+      const batch = cand.slice(i, i + 9);
+      const rs = await Promise.all(batch.map(checkImageUrl));
+      const idx = rs.indexOf(true);
+      if (idx >= 0) { IMG_RESOLVED.set(nm, batch[idx]); return batch[idx]; }
+    }
+    IMG_RESOLVED.set(nm, null); return null;
+  })();
+  IMG_PENDING.set(nm, p);
+  try { const r = await p; IMG_PENDING.delete(nm); return r; } catch (e) { IMG_PENDING.delete(nm); throw e; }
+}
+
+async function handleImgError(img) {
+  const nm = parseInt(img.dataset.nm, 10);
+  if (!nm) return;
+  const url = await resolveWbImage(nm);
+  if (url && img.src !== url) img.src = url;
+}
+
+/* ============ ARTICLE ============ */
+function articleRule(article) {
+  if (!article) return { href: null };
+  if (/^0L-/i.test(article)) return { href: `https://liberti.ru/search/?q=${encodeURIComponent(article)}` };
+  if (/^\d{6}$/.test(article)) return { href: `https://vnoutbuke.ru/catalog/?q=${encodeURIComponent(article)}` };
+  return { href: null };
+}
+function renderArticleHtml(article) {
+  const art = articleRule(article);
+  return art.href ? `<a href="${art.href}" target="_blank" rel="noreferrer">${article}</a>` : `<span class="no-link">${article}</span>`;
+}
+function renderNmHtml(nm) { return `<a href="https://www.wildberries.ru/catalog/${nm}/detail.aspx" target="_blank" rel="noreferrer">${nm}</a>`; }
+
+/* ============ MARKETPLACE LABELS ============ */
+const MP_LABELS = { wb: 'Wildberries', ym: 'Яндекс Маркет', ozon: 'Ozon' };
+const MP_SHORT = { wb: 'WB', ym: 'YM', ozon: 'OZ' };
+
+/* ============ DEADLINE ============ */
+const PLATFORM_DEADLINE = { wb: 5, ym: 2, ozon: 1 };
+function deadlineInfo(c) {
+  if (c.state !== 'waiting' && c.state !== 'clarify') return null;
+  const limitDays = PLATFORM_DEADLINE[c.marketplace] || 5;
+  const limitHours = limitDays * 24;
+  const hoursWaiting = c.hoursWaiting !== undefined ? c.hoursWaiting : (c.daysWaiting * 24);
+  const left = limitHours - hoursWaiting;
+
+  let cls, label, unit;
+
+  // Если осталось больше суток (и это не Ozon) — показываем в днях
+  if (c.marketplace !== 'ozon' && left > 24) {
+    const leftDays = Math.floor(left / 24);
+    unit = 'd';
+    cls = 'safe';
+    label = `${leftDays} дн.`;
+  } else {
+    // Последние сутки (или Ozon) — показываем в часах, шкала как у Ozon
+    unit = 'h';
+    if (left <= 0) { cls = 'today'; label = 'истёк'; }
+    else if (left <= 3) { cls = 'today'; label = `${Math.ceil(left)} ч.`; }
+    else if (left <= 6) { cls = 'soon'; label = `${Math.ceil(left)} ч.`; }
+    else { cls = 'safe'; label = `${Math.ceil(left)} ч.`; }
+  }
+
+  return { left, cls, label, limit: unit === 'h' ? limitHours : limitDays, unit };
+}
+
+/* ============ ДАННЫЕ ============ */
+const ALL_CLAIMS = [
+  {
+    // c1: WB, chat + note + analytics = 3 индикатора
+    id: "c1", state: "waiting", clientName: "Александр",
+    product: "Насадка пресс для пасты кухонного комбайна R106, R805, R112",
+    article: "R125-001", nm: "277104280", brand: "Ragex", marketplace: "wb",
+    orderDate: "07.10.26", orderTime: "07:04",
+    ransomDate: "14.10.26", ransomTime: "13:08", ransomDaysAgo: 3,
+    claimDate: "14.10.26", claimTime: "13:59", daysWaiting: 0, hoursWaiting: 5,
+    reasonGroup: "wrong", reason: "Пришло не то или не всё: Привезли не то, что заказывали",
+    clientComment: "Заказывал пресс для пасты, а пришла насадка для шинковки. Не подходит.",
+    attachments: [makePhotoPlaceholder(400, 400, "Фото от покупателя")],
+    hasChat: true,
+    chat: [
+      { from: "buyer", text: "Здравствуйте, пришла не та насадка. Что делать?", time: "14.10, 14:12" },
+      { from: "seller", text: "Добрый день! Извините за путаницу. Уточните, пожалуйста, что именно в коробке?", time: "14.10, 14:20" },
+      { from: "buyer", text: "На фото видно — это насадка для шинковки, а я заказывал пресс.", time: "14.10, 14:35" }
+    ],
+    decision: null, commentDraft: '',
+    internalNote: "Проверил у поставщика — насадки для пресса и шинковки идут в одной партии, часто путают. Поставили метку на складе."
+  },
+  {
+    // c2: WB, chat + analytics = 2 индикатора (порядок: чат, аналитика)
+    id: "c2", state: "waiting", clientName: "Ольга",
+    product: "Фен стайлер для волос с насадками 2 в 1 2000 Вт",
+    article: "HT-HDS-001", nm: "543827562", brand: "Holt", marketplace: "wb",
+    orderDate: "21.03.26", orderTime: "11:43",
+    ransomDate: "24.03.26", ransomTime: "12:24", ransomDaysAgo: 204,
+    claimDate: "14.10.26", claimTime: "20:02", daysWaiting: 4, hoursWaiting: 116,
+    reasonGroup: "defect", reason: "Брак: Сломался при использовании",
+    clientComment: "Перестал греть через 2 недели использования. Чек и гарантийник есть.",
+    attachments: [makePhotoPlaceholder(400, 400, "Фото от покупателя"), makePhotoPlaceholder(400, 400, "Фото от покупателя")],
+    hasChat: true,
+    chat: [{ from: "buyer", text: "Фен перестал греть, что делать?", time: "14.10, 20:15" }],
+    decision: null, commentDraft: '', internalNote: ''
+  },
+  {
+    // c3: WB, note + analytics = 2 индикатора
+    id: "c3", state: "waiting", clientName: "Дмитрий",
+    product: "Аккумулятор для телефона Xiaomi Redmi Go 2910mAh 3.85V",
+    article: "066413", nm: "41765879", brand: "Торос / Либерти", marketplace: "wb",
+    orderDate: "05.10.26", orderTime: "17:00",
+    ransomDate: "14.10.26", ransomTime: "12:07", ransomDaysAgo: 3,
+    claimDate: "14.10.26", claimTime: "15:47", daysWaiting: 4, hoursWaiting: 118,
+    reasonGroup: "wrong", reason: "Пришло не то или не всё: Привезли не то, что заказывали",
+    clientComment: "Заказывал батарею для Xiaomi, пришла для другой модели.",
+    attachments: [makePhotoPlaceholder(400, 400, "Фото от покупателя")],
+    hasChat: false, chat: [],
+    decision: null, commentDraft: '',
+    internalNote: 'Проверил у поставщика — партия перепутана. Замена уже запрошена.'
+  },
+  {
+    // c4: Ozon, chat only = 1 индикатор
+    id: "c4", state: "waiting", clientName: "Виктор",
+    product: "Плата разъема питания с микрофоном смартфона Redmi Note 7S",
+    article: "0L-MG-WF577", nm: "183911462", brand: "Торос / Либерти", marketplace: "ozon",
+    orderDate: "17.09.26", orderTime: "10:31",
+    ransomDate: "26.09.26", ransomTime: "19:01", ransomDaysAgo: 21,
+    claimDate: "14.10.26", claimTime: "13:37", daysWaiting: 6, hoursWaiting: 3,
+    reasonGroup: "defect", reason: "Брак: Сломался при использовании",
+    clientComment: "Не работает микрофон, плата не припаивается нормально. Ставил аккуратно.",
+    attachments: [makePhotoPlaceholder(400, 400, "Фото от покупателя")],
+    hasChat: true,
+    chat: [
+      { from: "buyer", text: "Плата не работает, микрофон не ловит", time: "14.10, 13:20" },
+      { from: "seller", text: "Добрый день! Уточните, пожалуйста, при установке плата была повреждена?", time: "14.10, 13:30" },
+      { from: "buyer", text: "Нет, я аккуратно ставил, но микрофон всё равно не работает", time: "14.10, 13:35" }
+    ],
+    decision: null, commentDraft: '', internalNote: ''
+  },
+  {
+    // c5: Yandex, note only = 1 индикатор
+    id: "c5", state: "waiting", clientName: "Дмитрий",
+    product: "Кухонный комбайн многофункциональный R125-001, 1500 Вт",
+    article: "R125-001", nm: "759811459", brand: "Ragex", marketplace: "ym",
+    orderDate: "13.10.26", orderTime: "18:20",
+    ransomDate: "14.10.26", ransomTime: "10:00", ransomDaysAgo: 3,
+    claimDate: "14.10.26", claimTime: "11:00", daysWaiting: 0,
+    reasonGroup: "defect", reason: "Брак: Товар пришёл с проблемой",
+    clientComment: "Пришёл с трещиной на корпусе, отказался при получении.",
+    attachments: [makePhotoPlaceholder(400, 400, "Фото от покупателя")],
+    hasChat: false, chat: [],
+    decision: null, commentDraft: '',
+    internalNote: "Партия R125-001 пришла с трещинами на корпусе — 3 из 10. Поставщик компенсирует."
+  }
+];
+
+/* Архивные заявки — для аналитики. Подобрано так, чтобы получились нужные комбинации бейджей. */
+const ARCHIVED_CLAIMS = [
+  // 277104280 → +2 (было 3, стало 5 archived + 1 active = 6 total → analytics ON)
+  { nm: "277104280", reasonGroup: "defect", date: "02.10.26", status: "approved" },
+  { nm: "277104280", reasonGroup: "defect", date: "28.09.26", status: "approved" },
+  { nm: "277104280", reasonGroup: "notfit", date: "20.09.26", status: "rejected" },
+  { nm: "277104280", reasonGroup: "wrong",  date: "12.10.26", status: "approved" },
+  { nm: "277104280", reasonGroup: "defect", date: "08.10.26", status: "approved" },
+
+  // 543827562 → 5 archived + 1 active = 6 total → analytics ON (без изменений)
+  { nm: "543827562", reasonGroup: "defect", date: "08.10.26", status: "approved" },
+  { nm: "543827562", reasonGroup: "defect", date: "05.10.26", status: "approved" },
+  { nm: "543827562", reasonGroup: "notfit", date: "01.10.26", status: "approved" },
+  { nm: "543827562", reasonGroup: "wrong",  date: "25.09.26", status: "rejected" },
+  { nm: "543827562", reasonGroup: "defect", date: "18.09.26", status: "approved" },
+
+  // 41765879 → +5 (было 0, стало 5 archived + 1 active = 6 total → analytics ON)
+  { nm: "41765879", reasonGroup: "defect", date: "10.10.26", status: "approved" },
+  { nm: "41765879", reasonGroup: "defect", date: "06.10.26", status: "approved" },
+  { nm: "41765879", reasonGroup: "notfit", date: "02.10.26", status: "rejected" },
+  { nm: "41765879", reasonGroup: "defect", date: "28.09.26", status: "approved" },
+  { nm: "41765879", reasonGroup: "defect", date: "25.09.26", status: "approved" },
+
+  // 183911462 → 4 archived + 1 active = 5 total → analytics OFF (без изменений)
+  { nm: "183911462", reasonGroup: "defect", date: "05.10.26", status: "approved" },
+  { nm: "183911462", reasonGroup: "defect", date: "02.10.26", status: "approved" },
+  { nm: "183911462", reasonGroup: "wrong",  date: "28.09.26", status: "rejected" },
+  { nm: "183911462", reasonGroup: "defect", date: "20.09.26", status: "approved" },
+
+  // 759811459 → 4 archived + 1 active = 5 total → analytics OFF (было 6 archived, убрали 2)
+  { nm: "759811459", reasonGroup: "defect", date: "10.10.26", status: "approved" },
+  { nm: "759811459", reasonGroup: "defect", date: "07.10.26", status: "approved" },
+  { nm: "759811459", reasonGroup: "defect", date: "03.10.26", status: "approved" },
+  { nm: "759811459", reasonGroup: "notfit", date: "29.09.26", status: "rejected" }
+];
+
+/* ============ ОТЗЫВЫ ПО ТОВАРУ (демо) ============ */
+const PRODUCT_REVIEWS = {
+  "277104280": [
+    { rating: 1, date: "14 окт.", author: "Александр", text: "Не та насадка, разочарован. Заказывал пресс, пришла шинковка." },
+    { rating: 2, date: "10 окт.", author: "Максим", text: "Не плотно прилегает к комбайну, приходится держать рукой." },
+    { rating: 3, date: "05 окт.", author: "Ирина", text: "Работает, но качество пластика ощутимо дешевле, чем у оригинальной." },
+    { rating: 1, date: "28 сен.", author: "Олег", text: "Сломалась через неделю использования." }
+  ],
+  "543827562": [
+    { rating: 1, date: "14 окт.", author: "Ольга", text: "Перестал греть через 2 недели использования. Чек и гарантийник есть." },
+    { rating: 2, date: "08 окт.", author: "Елена", text: "Шумит сильно, но работает. За такие деньги ожидала лучше." },
+    { rating: 3, date: "30 сен.", author: "Анна", text: "Нормальный, но насадки сидят не плотно." }
+  ],
+  "41765879": [
+    { rating: 2, date: "12 окт.", author: "Виктор", text: "Не держит заряд больше суток, приходится постоянно заряжать." },
+    { rating: 3, date: "25 сен.", author: "Николай", text: "Работает, но немного люфтит в отсеке." }
+  ],
+  "183911462": [
+    { rating: 2, date: "14 окт.", author: "Виктор", text: "Не работает микрофон, плата не припаивается нормально." },
+    { rating: 1, date: "08 окт.", author: "Дмитрий", text: "Микрофон хрипит, пришлось заменить." },
+    { rating: 3, date: "02 окт.", author: "Андрей", text: "Работает, но пришлось повозиться с пайкой." }
+  ],
+  "759811459": [
+    { rating: 5, date: "10 окт.", author: "Мария", text: "Отличный комбайн, всё устраивает." },
+    { rating: 4, date: "06 окт.", author: "Сергей", text: "Работает как надо, шумноват немного." }
+  ]
+};
+
+/* ============ ANALYTICS ============ */
+const ANALYTICS_THRESHOLD = 5;
+function getAnalyticsByNm(nm) {
+  const active = ALL_CLAIMS.filter(c => c.nm === nm);
+  const archived = ARCHIVED_CLAIMS.filter(a => a.nm === nm);
+  const total = active.length + archived.length;
+  const reasonsMap = {};
+  active.forEach(c => { reasonsMap[c.reasonGroup] = (reasonsMap[c.reasonGroup] || 0) + 1; });
+  archived.forEach(a => { reasonsMap[a.reasonGroup] = (reasonsMap[a.reasonGroup] || 0) + 1; });
+  const reasons = Object.entries(reasonsMap)
+    .map(([k, n]) => ({ key: k, label: REASON_LABELS[k] || 'Другое', count: n }))
+    .sort((a, b) => b.count - a.count);
+  const statuses = { waiting: 0, approved: 0, rejected: 0, clarify: 0 };
+  active.forEach(c => { statuses[c.state] = (statuses[c.state] || 0) + 1; });
+  archived.forEach(a => { if (a.status === 'approved') statuses.approved++; else if (a.status === 'rejected') statuses.rejected++; });
+  const items = [
+    ...active.map(c => ({
+      date: c.claimDate,
+      reasonLabel: REASON_LABELS[c.reasonGroup] || 'Другое',
+      statusLabel: c.state === 'approved' ? 'Одобрено' : c.state === 'rejected' ? 'Отклонено' : 'Ждёт',
+      statusCls: c.state === 'approved' ? 'ok' : c.state === 'rejected' ? 'bad' : 'wait'
+    })),
+    ...archived.map(a => ({
+      date: a.date,
+      reasonLabel: REASON_LABELS[a.reasonGroup] || 'Другое',
+      statusLabel: a.status === 'approved' ? 'Одобрено' : 'Отклонено',
+      statusCls: a.status === 'approved' ? 'ok' : 'bad'
+    }))
+  ];
+  return { total, reasons, statuses, items };
+}
+function hasAnalytics(c) { return getAnalyticsByNm(c.nm).total > ANALYTICS_THRESHOLD; }
+function openAnalytics(nm, productName) {
+  closeAnalytics();
+  const data = getAnalyticsByNm(nm);
+  const claim = ALL_CLAIMS.find(c => c.nm === nm);
+  const product = productName || (claim ? claim.product : `NM ${nm}`);
+  const article = claim ? claim.article : '—';
+  const maxReasonCount = Math.max(1, ...data.reasons.map(r => r.count));
+  const reasonsHtml = data.reasons.map(r => `
+    <div class="analytics-bar-row">
+      <span class="bar-label">${r.label}</span>
+      <div class="bar-wrap"><div class="bar-fill ${r.key === 'defect' ? 'danger' : r.key === 'wrong' ? 'warn' : ''}" style="width: ${(r.count / maxReasonCount) * 100}%;"></div></div>
+      <span class="bar-count">${r.count}</span>
+    </div>
+  `).join('');
+  const itemsHtml = data.items.slice(0, 12).map(it => `
+    <div class="analytics-list-row">
+      <span class="al-date">${it.date}</span>
+      <span class="al-reason">${it.reasonLabel}</span>
+      <span class="al-status ${it.statusCls}">${it.statusLabel}</span>
+    </div>
+  `).join('');
+  const modal = document.createElement('div');
+  modal.className = 'decision-modal-backdrop';
+  modal.id = 'analytics-modal-backdrop';
+  modal.onclick = (e) => { if (e.target === modal) closeAnalytics(); };
+  modal.innerHTML = `
+    <div class="analytics-modal" onclick="event.stopPropagation()">
+      <div class="decision-modal-head">
+        <div style="flex:1; min-width:0;">
+          <h2>📊 Аналитика возвратов</h2>
+          <div style="font-size: 13px; color: var(--muted); margin-top: 2px;">${escapeHtml(product)}</div>
+        </div>
+        <button type="button" class="decision-modal-close" onclick="closeAnalytics()">×</button>
+      </div>
+      <div class="analytics-body">
+        <div style="display: flex; gap: 12px; font-size: 13px; color: var(--muted); margin-bottom: 16px; flex-wrap: wrap;">
+          <span>Артикул: <strong style="color: var(--text);">${article}</strong></span>
+          <span>·</span>
+          <span>NM: <strong style="color: var(--text);">${nm}</strong></span>
+          <span>·</span>
+          <span>За 30 дней</span>
+        </div>
+        <div class="analytics-kpi">
+          <div class="analytics-kpi-item"><span class="lbl">Всего</span><div class="val">${data.total}</div></div>
+          <div class="analytics-kpi-item warn"><span class="lbl">Ждут</span><div class="val">${data.statuses.waiting + data.statuses.clarify}</div></div>
+          <div class="analytics-kpi-item ok"><span class="lbl">Одобрено</span><div class="val">${data.statuses.approved}</div></div>
+          <div class="analytics-kpi-item danger"><span class="lbl">Отклонено</span><div class="val">${data.statuses.rejected}</div></div>
+        </div>
+        <div class="analytics-section">
+          <div class="analytics-section-title">По причинам</div>
+          ${reasonsHtml}
+        </div>
+        <div class="analytics-section">
+          <div class="analytics-section-title">Последние заявки</div>
+          <div class="analytics-list">${itemsHtml}</div>
+        </div>
+        <div class="analytics-todo">
+          <strong>Зачем эта панель:</strong> один возврат — случайность. Пять по одному товару за 30 дней — закономерность. Менеджер видит поток и может написать поставщику или на склад, чтобы разобраться в проблеме.
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+function closeAnalytics() {
+  const m = document.getElementById('analytics-modal-backdrop');
+  if (m) m.remove();
+}
+
+/* ============ DECISIONS ============ */
+const DECISIONS = {
+  approve_pickup: { group: 'approve', icon: '✅', title: 'Одобрить и забрать товар', sub: 'Деньги вернутся покупателю после возврата товара. Товар отправят вам.' },
+  approve_keep: { group: 'approve', icon: '🎁', title: 'Одобрить без возврата товара', sub: 'Товар останется у покупателя, деньги ему вернут.' },
+  reject_no_defect: { group: 'reject', icon: '🚫', title: 'Отклонить: брак не обнаружен', sub: 'Покупатель получит ответ площадки по шаблону: брак подтвердить не получилось, можно обратиться на независимую экспертизу.' },
+  reject_need_media: { group: 'reject', icon: '📷', title: 'Отклонить: нужно больше фото и видео', sub: 'Покупатель получит ответ площадки по шаблону: нужно создать новую заявку и приложить больше фото и видео.' },
+  reject_service_center: { group: 'reject', icon: '🔧', title: 'Отклонить: обратиться в сервисный центр', sub: 'Покупатель получит ответ площадки по шаблону: нужно обратиться в сервисный центр и приложить заключение.' },
+  reject_comment: { group: 'reject', icon: '💬', title: 'Отклонить со своим комментарием', sub: 'Покупатель увидит ваш комментарий из поля ниже.' }
+};
+const DEFAULT_TEMPLATES = [
+  { short: 'Брак не подтверждён', full: 'По предоставленным фото брак не подтверждён. Рекомендуем обратиться в сервисный центр для проведения независимой диагностики.' },
+  { short: 'Товар соответствует описанию', full: 'К сожалению, мы не можем одобрить возврат: товар полностью соответствует описанию. Если у вас есть дополнительные доказательства, создайте новую заявку с фото и видео.' },
+  { short: 'Нужно видео работы', full: 'Отказ по заявке. Если вы уверены в браке — приложите, пожалуйста, короткое видео работы товара и создайте новую заявку, мы её рассмотрим.' }
+];
+function loadTemplates() {
+  try {
+    const saved = localStorage.getItem('replio.rejectTemplates');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [...DEFAULT_TEMPLATES];
+}
+function saveTemplates(list) {
+  try { localStorage.setItem('replio.rejectTemplates', JSON.stringify(list)); } catch (e) {}
+}
+
+/* ============ STATE ============ */
+function getDefaultFilters() {
+  return {
+    state: ['waiting', 'clarify'],
+    brand: ['Ragex', 'Торос / Либерти', 'Holt'],
+    reason: ['defect', 'wrong', 'notfit', 'change'],
+    marketplace: ['wb', 'ym', 'ozon'],
+    period: '30'
+  };
+}
+const DEFAULT_SORT = 'deadline';
+
+const state = {
+  filters: getDefaultFilters(),
+  sortBy: DEFAULT_SORT,
+  activeClaimId: null,
+  autoAdvance: true,
+  chatDraft: {},
+  templates: loadTemplates(),
+  editingTemplateIdx: null
+};
+
+const STATE_LABELS = { waiting: "Ждёт решения", clarify: "Уточняем", approved: "Одобрено", rejected: "Отклонено" };
+const STATE_CHIP_STYLE = {
+  waiting: 'background: var(--warn-soft); color: #92400e;',
+  clarify: 'background: var(--warn-soft); color: #92400e;',
+  approved: 'background: var(--ok-soft); color: #065f46;',
+  rejected: 'background: var(--danger-soft); color: #991b1b;'
+};
+const REASON_LABELS = { defect: "Брак / поломка", wrong: "Не то / не всё", notfit: "Не подошёл", change: "Передумал" };
+const SORT_LABELS = { 'date-desc': 'Сначала новые', 'date-asc': 'Сначала старые', 'deadline': 'По дедлайну' };
+
+/* ============ UTIL ============ */
+function escapeHtml(t) {
+  return String(t).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]);
+}
+function pluralizeDays(n) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} день назад`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return `${n} дня назад`;
+  return `${n} дней назад`;
+}
+
+/* ============ FILTERS ============ */
+function applyFilters(items) {
+  return items.filter(r => {
+    if (!state.filters.state.length || !state.filters.state.includes(r.state)) return false;
+    if (!state.filters.brand.length || !state.filters.brand.includes(r.brand)) return false;
+    if (!state.filters.reason.length || !state.filters.reason.includes(r.reasonGroup)) return false;
+    if (!state.filters.marketplace.length || !state.filters.marketplace.includes(r.marketplace)) return false;
+    return true;
+  });
+}
+function sortClaims(items) {
+  const s = [...items];
+  if (state.sortBy === 'date-desc') s.sort((a, b) => a.daysWaiting - b.daysWaiting);
+  else if (state.sortBy === 'date-asc') s.sort((a, b) => b.daysWaiting - a.daysWaiting);
+  else if (state.sortBy === 'deadline') {
+    s.sort((a, b) => {
+      const da = deadlineInfo(a);
+      const db = deadlineInfo(b);
+      if (!da && !db) return 0;
+      if (!da) return 1;
+      if (!db) return -1;
+      return da.left - db.left;
+    });
+  }
+  return s;
+}
+
+function getFilteredAndSorted() {
+  const searchInput = document.querySelector('.search input');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  let items = applyFilters(ALL_CLAIMS);
+  if (q) {
+    items = items.filter(c =>
+      (c.product || '').toLowerCase().includes(q) ||
+      (c.article || '').toLowerCase().includes(q) ||
+      (c.clientName || '').toLowerCase().includes(q) ||
+      (c.nm || '').toLowerCase().includes(q)
+    );
+  }
+  return sortClaims(items);
+}
+
+function updateBadges() {
+  const f = state.filters;
+  const setBadge = (id, count) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) { el.textContent = count; el.style.display = 'inline-block'; el.closest('.filter-btn').classList.add('has-value'); }
+    else { el.style.display = 'none'; el.closest('.filter-btn').classList.remove('has-value'); }
+  };
+  const def = getDefaultFilters();
+  const isStateDefault = f.state.length === def.state.length && f.state.every(v => def.state.includes(v));
+  const isBrandDefault = f.brand.length === def.brand.length;
+  const isReasonDefault = f.reason.length === def.reason.length;
+  const isMpDefault = f.marketplace.length === def.marketplace.length;
+
+  setBadge('badge-state', isStateDefault ? 0 : f.state.length);
+  setBadge('badge-brand', isBrandDefault ? 0 : f.brand.length);
+  setBadge('badge-reason', isReasonDefault ? 0 : f.reason.length);
+  setBadge('badge-mp', isMpDefault ? 0 : f.marketplace.length);
+
+  // Текст кнопки "Период"
+  const periodLabelEl = document.getElementById('label-period');
+  if (periodLabelEl) {
+    const periodMap = { '7': '7 дней', '30': '30 дней', '90': '90 дней', 'all': 'Всё время' };
+    periodLabelEl.textContent = periodMap[f.period] || '30 дней';
+  }
+
+  const sortLabel = document.getElementById('sort-label-inline');
+  if (sortLabel) sortLabel.textContent = SORT_LABELS[state.sortBy] || 'Сначала новые';
+
+  document.querySelectorAll('.popover').forEach(pop => {
+    const key = pop.id.replace('pop-', '');
+    pop.querySelectorAll('.opt').forEach(opt => {
+      const val = opt.getAttribute('data-val');
+      const hint = opt.querySelector('.hint-count');
+      if (!hint) return;
+      let count = 0;
+      if (key === 'period') count = ALL_CLAIMS.length;
+      else {
+        count = ALL_CLAIMS.filter(c => {
+          const field = key === 'mp' ? c.marketplace : (key === 'state' ? c.state : (key === 'brand' ? c.brand : (key === 'reason' ? c.reasonGroup : null)));
+          return field === val;
+        }).length;
+      }
+      hint.textContent = count;
+    });
+  });
+
+  const filtered = applyFilters(ALL_CLAIMS);
+  const sumWaiting = document.getElementById('sum-waiting');
+  const sumExpiring = document.getElementById('sum-expiring');
+  const sumDone = document.getElementById('sum-done');
+  if (sumWaiting) sumWaiting.textContent = filtered.filter(c => c.state === 'waiting' || c.state === 'clarify').length;
+  if (sumExpiring) sumExpiring.textContent = filtered.filter(c => { const d = deadlineInfo(c); return d && d.left <= 24; }).length;
+  if (sumDone) sumDone.textContent = filtered.filter(c => c.state === 'approved' || c.state === 'rejected').length;
+}
+
+function renderTable() {
+  const tbody = document.getElementById('claims-tbody');
+  if (!tbody) return;
+  const items = getFilteredAndSorted();
+
+  if (items.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:48px;color:var(--muted);font-size:15px;">По заданным фильтрам заявок нет. <button class="btn small" onclick="resetAllFilters()" style="margin-left:8px;">Сбросить фильтры</button></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = items.map(c => {
+    const d = deadlineInfo(c);
+    const isActive = state.activeClaimId === c.id;
+    const imgUrl = getFirstGuessUrl(c.nm);
+    const hasNote = Boolean(c.internalNote && c.internalNote.trim());
+    const isWarnAnalytics = hasAnalytics(c);
+    const reasonTag = REASON_LABELS[c.reasonGroup] || 'Другое';
+    const reasonText = c.reason.split(':')[1] ? c.reason.split(':')[1].trim() : c.reason;
+    const relCls = c.ransomDaysAgo <= 14 ? 'recent' : (c.ransomDaysAgo <= 180 ? 'old' : 'very-old');
+
+    let rowClass = `row-mp-${c.marketplace}`;
+    if (isActive) rowClass += ' active';
+
+    let deadlineHtml = '';
+    if (d) {
+      const limitLabel = d.unit === 'h' ? `${d.limit} ч` : `${d.limit} дн`;
+      deadlineHtml = `<span class="deadline-chip ${d.cls}" title="Лимит площадки: ${limitLabel}">⏳ ${d.label}</span>`;
+    }
+
+    // Порядок индикаторов: чаты > заметки > предупреждение
+    const actionsHtml = `
+      ${c.hasChat ? `<button class="icon-btn-sm has-badge" onclick="event.stopPropagation(); openClaim('${c.id}'); setTimeout(scrollToChat, 250);" title="Есть переписка — открыть чат">💬<span class="badge">${c.chat.length}</span></button>` : ''}
+      ${hasNote ? `<button class="icon-btn-sm note-btn" title="Есть заметка" onclick="event.stopPropagation(); openNoteModal('${c.id}')">🔒</button>` : ''}
+      ${isWarnAnalytics ? `<button class="icon-btn-sm analytics" title="Много возвратов по товару — открыть аналитику" onclick="event.stopPropagation(); openAnalytics('${c.nm}', '${escapeHtml(c.product).replace(/'/g, "\\'")}')">⚠️</button>` : ''}
+    `;
+
+    return `
+      <tr class="${rowClass}" onclick="openClaim('${c.id}')">
+        <td>
+          <div class="product-cell">
+            <div class="photo">
+              <img src="${imgUrl}" alt="" data-nm="${c.nm}" onerror="handleImgError(this)">
+            </div>
+            <div class="product-cell-info">
+              <div class="name">${escapeHtml(c.product)}</div>
+              <div class="ids">
+                <span class="mp-pill mp-${c.marketplace}" title="${MP_LABELS[c.marketplace]}">${MP_SHORT[c.marketplace]}</span>
+                <span>Арт: ${renderArticleHtml(c.article)}</span>
+                <span>NM: ${renderNmHtml(c.nm)}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="date-cell">
+            ${c.ransomDate}
+            <span class="time">${c.ransomTime}</span>
+            <span class="rel-line ${relCls}">(<b>${c.ransomDaysAgo}</b> ${pluralizeDays(c.ransomDaysAgo).split(' ').slice(1).join(' ')})</span>
+          </div>
+        </td>
+        <td>
+          <div class="date-cell">
+            ${c.claimDate}
+            <span class="time">${c.claimTime}</span>
+            ${deadlineHtml}
+          </div>
+        </td>
+        <td>
+          <div class="reason-cell">
+            <span class="lbl">${reasonTag}</span>
+            <span class="reason-text">${escapeHtml(reasonText)}</span>
+          </div>
+        </td>
+        <td>
+          <div class="comment-cell">
+            ${c.clientComment ? escapeHtml(c.clientComment) : '<span style="color:var(--muted-2);">—</span>'}
+          </div>
+        </td>
+        <td>
+          <div class="row-actions" onclick="event.stopPropagation()">
+            ${actionsHtml}
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function render() {
+  updateBadges();
+  renderTable();
+  if (state.activeClaimId) {
+    const c = ALL_CLAIMS.find(x => x.id === state.activeClaimId);
+    if (c) updateDrawerContent(c);
+  }
+}
+
+function resetAllFilters() {
+  state.filters = getDefaultFilters();
+  state.sortBy = DEFAULT_SORT;
+  syncPickersFromState();
+  render();
+}
+
+
+/* ============ DRAWER ============ */
+function openClaim(id) {
+  state.activeClaimId = id;
+  const c = ALL_CLAIMS.find(x => x.id === id);
+  if (!c) return;
+  document.querySelectorAll('.claims-table tbody tr').forEach(tr => tr.classList.remove('active'));
+  const activeRow = document.querySelector(`.claims-table tbody tr[onclick*="'${id}'"]`);
+  if (activeRow) activeRow.classList.add('active');
+  updateDrawerContent(c);
+  // Сброс скролла: при открытии новой заявки всегда показываем сверху
+  const drawerBody = document.getElementById('drawer-body');
+  if (drawerBody) drawerBody.scrollTop = 0;
+  document.getElementById('drawer-backdrop').classList.add('visible');
+  document.getElementById('claim-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  state.activeClaimId = null;
+  document.getElementById('drawer-backdrop').classList.remove('visible');
+  document.getElementById('claim-drawer').classList.remove('open');
+  document.querySelectorAll('.claims-table tbody tr').forEach(tr => tr.classList.remove('active'));
+}
+
+function scrollToChat() {
+  const chat = document.getElementById('chat-block-anchor');
+  if (chat) chat.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ============ RECENT REVIEWS ============ */
+function renderRecentReviews(c) {
+  const all = PRODUCT_REVIEWS[c.nm] || [];
+  const filtered = all.filter(r => r.rating <= 3).slice(0, 5);
+  if (!filtered.length) {
+    return `<div style="font-size:14px;color:var(--muted);line-height:1.5;">Свежих отзывов с оценкой 3★ и ниже по этому товару нет.</div>`;
+  }
+  return `
+    <div class="linked-block">
+      ${filtered.map(r => {
+        const sameBuyer = r.author === c.clientName;
+        return `
+          <div class="linked-item" onclick="showToast('Открытие отзыва (демо)')">
+            <div class="review-rating ${r.rating <= 2 ? 'bad' : 'warn'}">${r.rating}★</div>
+            <div class="link-info">
+              <div class="link-title">${escapeHtml(r.author)} · ${r.date}${sameBuyer ? '<span class="chip-mini">возможно, тот же</span>' : ''}</div>
+              <div class="link-meta">${escapeHtml(r.text)}</div>
+            </div>
+            <div class="link-arrow">→</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+    <div style="margin-top:10px;line-height:1.5;">
+      <a href="#" onclick="event.preventDefault(); showToast('Переход в раздел «Отзывы» с фильтром по NM ${c.nm}')" style="color: var(--accent); text-decoration: none; font-weight: 500; font-size: 13px;">Посмотреть все отзывы →</a>
+    </div>
+  `;
+}
+
+function updateDrawerContent(c) {
+  const body = document.getElementById('drawer-body');
+  const footer = document.getElementById('drawer-footer');
+  if (!body || !footer) return;
+
+  const imgUrl = getFirstGuessUrl(c.nm);
+  const d = deadlineInfo(c);
+  const relCls = c.ransomDaysAgo <= 14 ? 'recent' : (c.ransomDaysAgo <= 180 ? 'old' : 'very-old');
+  const hasNote = Boolean(c.internalNote && c.internalNote.trim());
+  const showAnalyticsChip = hasAnalytics(c);
+  const analyticsCount = getAnalyticsByNm(c.nm).total;
+
+  const deadlineLimitLabel = d ? (d.unit === 'h' ? `${d.limit} ч` : `${d.limit} дн`) : '';
+  const deadlineChip = d ? `<span class="chip-xs deadline-${d.cls}" title="Лимит площадки: ${deadlineLimitLabel}">⏳ ${d.label}</span>` : '';
+
+  const attachmentsHtml = c.attachments && c.attachments.length ? `
+    <div class="drawer-section">
+      <div class="section-title">Фото и видео от покупателя (${c.attachments.length})</div>
+      <div class="media-grid">
+        ${c.attachments.map((url, idx) => `<button type="button" class="media-thumb" onclick="openLightbox('${url}')"><img src="${url}" alt="Фото ${idx+1}"></button>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  const chatSectionHtml = c.hasChat ? `
+    <div class="drawer-section" id="chat-block-anchor">
+      <div class="section-title">Чат с покупателем</div>
+      <div class="chat-block">
+        <div class="chat-head">
+          <div class="chat-avatar">${c.clientName.charAt(0)}</div>
+          <div class="chat-title">Чат с покупателем (${escapeHtml(c.clientName)})</div>
+        </div>
+        <div class="chat-body" id="drawer-chat-body">
+          ${c.chat.map(m => `
+            <div class="chat-msg ${m.from}">
+              <div class="bubble">${escapeHtml(m.text)}</div>
+              <div class="time">${m.time}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="chat-input-row">
+          <textarea placeholder="Написать сообщение покупателю..." id="chat-textarea" oninput="updateChatDraft('${c.id}', this.value)">${escapeHtml(state.chatDraft[c.id] || '')}</textarea>
+          <button type="button" class="chat-send" onclick="sendChatMessage('${c.id}')">Отправить</button>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  const recentReviewsList = (PRODUCT_REVIEWS[c.nm] || []).filter(r => r.rating <= 3).slice(0, 5);
+  const reviewsSectionHtml = recentReviewsList.length ? `
+    <div class="drawer-section">
+      <div class="section-title">Последние отзывы (3★ и ниже)</div>
+      ${renderRecentReviews(c)}
+    </div>
+  ` : '';
+
+  const hasNoChat = !c.hasChat;
+  const hasNoReviews = !recentReviewsList.length;
+  const emptyHintsHtml = (hasNoChat || hasNoReviews) ? `
+    <div class="drawer-section">
+      <div class="empty-hint">
+        ${hasNoChat ? '💬 Чат с покупателем не открыт' : ''}
+        ${hasNoChat && hasNoReviews ? '<span class="sep">·</span>' : ''}
+        ${hasNoReviews ? '📝 Отзывов 3★ и ниже по товару нет' : ''}
+      </div>
+    </div>
+  ` : '';
+
+  // Шапка drawer'а: имя → артикул → NM → чипы
+  body.innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-product">
+        <div class="photo"><img src="${imgUrl}" alt="" data-nm="${c.nm}" onerror="handleImgError(this)"></div>
+        <div class="drawer-product-info">
+          <div class="name">${escapeHtml(c.product)}</div>
+          <div class="meta-row">
+            <div>Артикул: ${renderArticleHtml(c.article)} · NM: ${renderNmHtml(c.nm)}</div>
+            <div class="summary-line">
+              Выкуп <strong>${c.ransomDate}</strong>, ${c.ransomTime}
+              <span class="rel-inline ${relCls}">(<b>${c.ransomDaysAgo}</b> ${pluralizeDays(c.ransomDaysAgo).split(' ').slice(1).join(' ')})</span>
+              <span class="meta-dot">·</span>
+              Заявка <strong>${c.claimDate}</strong>, ${c.claimTime}
+            </div>
+          </div>
+          <div class="drawer-product-chips">
+            <span class="mp-label mp-${c.marketplace}" title="${MP_LABELS[c.marketplace]}">${MP_SHORT[c.marketplace]}</span>
+            <span class="chip-xs brand-${c.brand === 'Ragex' ? 'ragex' : c.brand === 'Holt' ? 'holt' : 'toros'}">${c.brand}</span>
+            <span class="chip-xs" style="${STATE_CHIP_STYLE[c.state]}">${STATE_LABELS[c.state]}</span>
+            ${deadlineChip}
+            ${showAnalyticsChip ? `<button type="button" class="chip-xs analytics" onclick="openAnalytics('${c.nm}', '${escapeHtml(c.product).replace(/'/g, "\\'")}')">📊 ${analyticsCount} возвратов за 30 дней</button>` : ''}
+            ${!hasNote ? `<button type="button" class="chip-xs note-chip" onclick="openNoteModal('${c.id}')">+ Заметка</button>` : ''}
+          </div>
+          ${hasNote ? `
+            <div class="note-preview" onclick="openNoteModal('${c.id}')">
+              <div class="np-icon">🔒</div>
+              <div class="np-text">${escapeHtml(c.internalNote)}</div>
+              <div class="np-edit">Изменить</div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="kv-block">
+        <div class="k">Причина · ${REASON_LABELS[c.reasonGroup] || 'Другое'}</div>
+        <div class="v">${escapeHtml(c.reason.split(':')[1] ? c.reason.split(':')[1].trim() : c.reason)}</div>
+      </div>
+      ${c.clientComment ? `
+        <div class="kv-block" style="margin-top:10px;">
+          <div class="k">Комментарий покупателя</div>
+          <div class="v">${escapeHtml(c.clientComment)}</div>
+        </div>
+      ` : ''}
+      ${(c.state === 'waiting' || c.state === 'clarify') ? `
+        <div class="quick-actions">
+          <button type="button" class="btn" onclick="startConfirmDecision('${c.id}', 'reject_no_defect')">🚫 Отклонить: брак не обнаружен</button>
+          <button type="button" class="btn" onclick="startConfirmDecision('${c.id}', 'reject_need_media')">📷 Отклонить: нужно больше фото и видео</button>
+          <button type="button" class="btn primary" onclick="startConfirmDecision('${c.id}', 'approve_pickup')">✅ Одобрить и забрать</button>
+        </div>
+      ` : ''}
+    </div>
+
+    ${attachmentsHtml}
+
+    ${chatSectionHtml}
+
+    ${reviewsSectionHtml}
+
+    ${emptyHintsHtml}
+  `;
+
+  if (c.state === 'waiting' || c.state === 'clarify') {
+    footer.innerHTML = `
+      <button type="button" class="footer-decision-btn" onclick="openDecisionMenu('${c.id}')">
+        <span>Выбрать решение по заявке</span>
+        <span class="arrow">▼</span>
+      </button>
+    `;
+  } else {
+    const isOk = c.state === 'approved';
+    const decidedTitle = c.decision && DECISIONS[c.decision] ? DECISIONS[c.decision].title : STATE_LABELS[c.state];
+    const nextItem = getNextUnresolved(c.id);
+    let nextBtnHtml = '';
+    if (nextItem) {
+      nextBtnHtml = `
+        <button type="button" class="next-claim-btn" onclick="openClaim('${nextItem.id}')">
+          <span class="next-label">Следующая</span>
+          <span class="next-title">${escapeHtml(nextItem.clientName)} · ${escapeHtml(nextItem.product.split(',')[0])}</span>
+          <span class="next-meta">${deadlineInfo(nextItem)?.label || (nextItem.daysWaiting + ' дн.')}</span>
+          <span class="arrow">→</span>
+        </button>
+      `;
+    }
+    footer.innerHTML = `
+      <div class="footer-done">
+        <div class="footer-done-icon">${isOk ? '✅' : '❌'}</div>
+        <div class="footer-done-text">${escapeHtml(decidedTitle)}</div>
+        <div class="footer-done-badge ${isOk ? 'ok' : 'bad'}">${isOk ? 'Одобрено' : 'Отклонено'}</div>
+      </div>
+      ${nextBtnHtml}
+    `;
+  }
+}
+
+function getNextUnresolved(currentId) {
+  const items = getFilteredAndSorted();
+  const idx = items.findIndex(x => x.id === currentId);
+  for (let i = idx + 1; i < items.length; i++) {
+    if (items[i].state === 'waiting' || items[i].state === 'clarify') return items[i];
+  }
+  for (let i = 0; i < idx; i++) {
+    if (items[i].state === 'waiting' || items[i].state === 'clarify') return items[i];
+  }
+  return null;
+}
+
+function autoAdvanceToNext(currentId) {
+  if (!state.autoAdvance) return;
+  const next = getNextUnresolved(currentId);
+  if (next) {
+    openClaim(next.id);
+  } else {
+    closeDrawer();
+    showToast('Все заявки в текущем списке разобраны!');
+  }
+}
+
+/* ============ DECISION MODAL ============ */
+function openDecisionMenu(claimId) {
+  closeDecisionModal();
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  if (!c) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'decision-modal-backdrop';
+  modal.id = 'decision-modal-backdrop';
+  modal.onclick = (e) => { if (e.target === modal) closeDecisionModal(); };
+
+  modal.innerHTML = `
+    <div class="decision-modal" onclick="event.stopPropagation()">
+      <div class="decision-modal-head">
+        <h2>Решение по заявке · ${escapeHtml(c.product.split(',')[0])}</h2>
+        <button type="button" class="decision-modal-close" onclick="closeDecisionModal()">×</button>
+      </div>
+      <div class="decision-modal-body" id="decision-modal-body">
+        <div class="decision-group">
+          <div class="decision-group-title">Одобрить заявку</div>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'approve_pickup')">
+            <div class="decision-option-title">✅ Одобрить и забрать товар</div>
+            <div class="decision-option-sub">Деньги вернутся покупателю после возврата товара на склад. Товар приедет к вам.</div>
+          </button>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'approve_keep')">
+            <div class="decision-option-title">🎁 Одобрить без возврата товара</div>
+            <div class="decision-option-sub">Товар останется у покупателя, деньги ему вернут.</div>
+          </button>
+        </div>
+        <div class="decision-group">
+          <div class="decision-group-title">Отклонить заявку</div>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'reject_no_defect')">
+            <div class="decision-option-title">🚫 Отклонить: брак не обнаружен</div>
+            <div class="decision-option-sub">Шаблон ответа площадки: брак подтвердить не получилось.</div>
+          </button>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'reject_need_media')">
+            <div class="decision-option-title">📷 Отклонить: нужно больше фото и видео</div>
+            <div class="decision-option-sub">Шаблон ответа площадки: создайте новую заявку и приложите больше доказательств.</div>
+          </button>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'reject_service_center')">
+            <div class="decision-option-title">🔧 Отклонить: обратиться в сервисный центр</div>
+            <div class="decision-option-sub">Шаблон ответа площадки: требуется заключение авторизованного СЦ.</div>
+          </button>
+          <button type="button" class="decision-option" onclick="startConfirmDecision('${c.id}', 'reject_comment')">
+            <div class="decision-option-title">💬 Отклонить со своим комментарием</div>
+            <div class="decision-option-sub">Написать произвольный текст ответа покупателю.</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function closeDecisionModal() {
+  const m = document.getElementById('decision-modal-backdrop');
+  if (m) m.remove();
+}
+
+function startConfirmDecision(claimId, decisionKey) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  const dec = DECISIONS[decisionKey];
+  if (!c || !dec) return;
+
+  closeDecisionModal();
+  const modal = document.createElement('div');
+  modal.className = 'decision-modal-backdrop';
+  modal.id = 'decision-modal-backdrop';
+  modal.onclick = (e) => { if (e.target === modal) closeDecisionModal(); };
+
+  if (decisionKey === 'reject_comment') {
+    modal.innerHTML = `
+      <div class="decision-modal" onclick="event.stopPropagation()">
+        <div class="decision-modal-head">
+          <h2>Отклонить со своим комментарием</h2>
+          <button type="button" class="decision-modal-close" onclick="closeDecisionModal()">×</button>
+        </div>
+        <div class="decision-modal-body">
+          <div class="comment-step-title">Комментарий покупателю</div>
+          <div class="comment-step-sub">Покупатель увидит этот текст в уведомлении от маркетплейса. Можно начать с шаблона и отредактировать.</div>
+          <div class="comment-templates">
+            <div class="comment-templates-label">Готовые шаблоны ответа</div>
+            ${renderTemplateList()}
+          </div>
+          <textarea class="comment-textarea" id="reject-comment-textarea" maxlength="5000" placeholder="Введите текст ответа покупателю..." oninput="updateCommentDraft('${claimId}', this.value)">${escapeHtml(c.commentDraft || '')}</textarea>
+          <div class="comment-meta"><span>${(c.commentDraft || '').length} / 5000</span></div>
+        </div>
+        <div class="decision-modal-footer">
+          <button type="button" class="btn" onclick="openDecisionMenu('${claimId}')">← Назад</button>
+          <button type="button" class="btn primary" onclick="submitRejectComment('${claimId}', '${decisionKey}')">Подтвердить отказ</button>
+        </div>
+      </div>
+    `;
+  } else {
+    modal.innerHTML = `
+      <div class="decision-modal" onclick="event.stopPropagation()">
+        <div class="decision-modal-head">
+          <h2>Подтверждение</h2>
+          <button type="button" class="decision-modal-close" onclick="closeDecisionModal()">×</button>
+        </div>
+        <div class="decision-modal-body">
+          <div class="confirm-step">
+            <div class="confirm-icon">${dec.icon}</div>
+            <div class="confirm-title">Подтвердить решение?</div>
+            <div class="confirm-sub">${dec.sub}</div>
+            <div class="confirm-choice">
+              <div class="lbl">Выбрано</div>
+              <div class="txt">${dec.title}</div>
+            </div>
+          </div>
+        </div>
+        <div class="decision-modal-footer">
+          <button type="button" class="btn" onclick="openDecisionMenu('${claimId}')">← Назад</button>
+          <button type="button" class="btn primary" onclick="confirmPending('${claimId}', '${decisionKey}')">Подтвердить</button>
+        </div>
+      </div>
+    `;
+  }
+  document.body.appendChild(modal);
+}
+
+function applyTemplate(btn, text) {
+  const ta = document.getElementById('reject-comment-textarea');
+  if (ta) {
+    ta.value = text;
+    ta.dispatchEvent(new Event('input'));
+  }
+  document.querySelectorAll('.reply-template-btn').forEach(b => b.style.borderColor = 'var(--border)');
+  btn.style.borderColor = 'var(--accent)';
+}
+
+function updateCommentDraft(claimId, val) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  if (c) {
+    c.commentDraft = val;
+    const ta = document.getElementById('reject-comment-textarea');
+    const meta = ta && ta.parentNode.querySelector('.comment-meta span');
+    if (meta) meta.textContent = val.length + ' / 5000';
+  }
+}
+
+function submitRejectComment(claimId, decisionKey) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  if (!c) return;
+  if (!c.commentDraft || !c.commentDraft.trim()) {
+    showToast('Напишите комментарий или выберите шаблон');
+    return;
+  }
+  const dec = DECISIONS[decisionKey];
+  if (!dec) return;
+
+  closeDecisionModal();
+  const modal = document.createElement('div');
+  modal.className = 'decision-modal-backdrop';
+  modal.id = 'decision-modal-backdrop';
+  modal.onclick = (e) => { if (e.target === modal) closeDecisionModal(); };
+
+  modal.innerHTML = `
+    <div class="decision-modal" onclick="event.stopPropagation()">
+      <div class="decision-modal-head">
+        <h2>Подтверждение</h2>
+        <button type="button" class="decision-modal-close" onclick="closeDecisionModal()">×</button>
+      </div>
+      <div class="decision-modal-body">
+        <div class="confirm-step">
+          <div class="confirm-icon">${dec.icon}</div>
+          <div class="confirm-title">Подтвердить решение?</div>
+          <div class="confirm-sub">${dec.sub}</div>
+          <div class="confirm-choice">
+            <div class="lbl">Выбрано</div>
+            <div class="txt">${dec.title}</div>
+          </div>
+          <div class="confirm-choice" style="margin-top: 8px;">
+            <div class="lbl">Комментарий покупателю</div>
+            <div class="txt" style="font-weight: 400; font-size: 14px; white-space: pre-wrap;">${escapeHtml(c.commentDraft.trim())}</div>
+          </div>
+        </div>
+      </div>
+      <div class="decision-modal-footer">
+        <button type="button" class="btn" onclick="startConfirmDecision('${claimId}', '${decisionKey}')">← Назад к комментарию</button>
+        <button type="button" class="btn primary" onclick="confirmPending('${claimId}', '${decisionKey}')">Подтвердить</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function renderTemplateList() {
+  return `
+    <div id="comment-templates-container">
+      ${renderTemplateItems()}
+    </div>
+  `;
+}
+
+function renderTemplateItems() {
+  const editing = state.editingTemplateIdx;
+  const rows = state.templates.map((t, idx) => {
+    if (editing === idx) {
+      return `
+        <div class="template-edit-block" data-idx="${idx}">
+          <input type="text" id="template-edit-short" value="${escapeHtml(t.short)}" placeholder="Короткое название" maxlength="60">
+          <textarea id="template-edit-full" placeholder="Текст шаблона">${escapeHtml(t.full)}</textarea>
+          <div class="template-edit-actions">
+            <button type="button" class="danger" onclick="deleteTemplate(${idx})">Удалить</button>
+            <button type="button" onclick="cancelTemplateEdit()">Отмена</button>
+            <button type="button" class="primary" onclick="saveTemplateEdit(${idx})">Сохранить</button>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="template-row">
+        <button type="button" class="reply-template-btn" onclick="applyTemplate(this, \`${escapeHtml(t.full)}\`)">
+          <span class="short">${escapeHtml(t.short)}</span>
+          <span class="full">${escapeHtml(t.full)}</span>
+        </button>
+        <button type="button" class="template-edit-btn" onclick="editTemplate(${idx})" title="Редактировать шаблон">✏️</button>
+      </div>
+    `;
+  }).join('');
+  const isAdding = editing !== null && editing >= state.templates.length;
+  return rows + (isAdding ? '' : `<button type="button" class="template-add-btn" onclick="addTemplate()">+ Новый шаблон</button>`);
+}
+
+function refreshTemplateList() {
+  const container = document.getElementById('comment-templates-container');
+  if (container) container.innerHTML = renderTemplateItems();
+}
+
+function editTemplate(idx) {
+  state.editingTemplateIdx = idx;
+  refreshTemplateList();
+  const input = document.getElementById('template-edit-short');
+  if (input) input.focus();
+}
+
+function addTemplate() {
+  state.templates.push({ short: '', full: '' });
+  state.editingTemplateIdx = state.templates.length - 1;
+  refreshTemplateList();
+  const input = document.getElementById('template-edit-short');
+  if (input) input.focus();
+}
+
+function cancelTemplateEdit() {
+  const idx = state.editingTemplateIdx;
+  if (idx !== null && idx >= 0) {
+    const t = state.templates[idx];
+    if (t && !t.short && !t.full) {
+      state.templates.splice(idx, 1);
+    }
+  }
+  state.editingTemplateIdx = null;
+  refreshTemplateList();
+}
+
+function saveTemplateEdit(idx) {
+  const input = document.getElementById('template-edit-short');
+  const ta = document.getElementById('template-edit-full');
+  if (!input || !ta) return;
+  const short = input.value.trim();
+  const full = ta.value.trim();
+  if (!short || !full) { showToast('Заполните название и текст шаблона'); return; }
+  state.templates[idx] = { short, full };
+  saveTemplates(state.templates);
+  state.editingTemplateIdx = null;
+  refreshTemplateList();
+  showToast('Шаблон сохранён');
+}
+
+function deleteTemplate(idx) {
+  state.templates.splice(idx, 1);
+  saveTemplates(state.templates);
+  state.editingTemplateIdx = null;
+  refreshTemplateList();
+  showToast('Шаблон удалён');
+}
+
+function confirmPending(claimId, decisionKey) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  if (!c) return;
+  c.decision = decisionKey;
+  c.state = decisionKey.startsWith('approve') ? 'approved' : 'rejected';
+
+  closeDecisionModal();
+  render();
+  const d = DECISIONS[decisionKey];
+  showToast(`${c.state === 'approved' ? '✅' : '🚫'} ${d ? d.title : STATE_LABELS[c.state]}`);
+
+  if (state.autoAdvance) {
+    autoAdvanceToNext(claimId);
+  }
+}
+
+/* ============ INTERNAL NOTE MODAL ============ */
+function openNoteModal(claimId) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  if (!c) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'decision-modal-backdrop';
+  modal.id = 'note-modal-backdrop';
+  modal.onclick = (e) => { if (e.target === modal) closeNoteModal(); };
+
+  modal.innerHTML = `
+    <div class="decision-modal" onclick="event.stopPropagation()" style="max-width: 520px;">
+      <div class="decision-modal-head">
+        <h2>🔒 Внутренняя заметка</h2>
+        <button type="button" class="decision-modal-close" onclick="closeNoteModal()">×</button>
+      </div>
+      <div class="decision-modal-body">
+        <textarea class="note-modal-textarea" id="note-textarea" placeholder="Например: проверил у поставщика — партия бракованная, замена уже запрошена.">${escapeHtml(c.internalNote || '')}</textarea>
+      </div>
+      <div class="decision-modal-footer">
+        <button type="button" class="btn" onclick="closeNoteModal()">Отмена</button>
+        <button type="button" class="btn primary" onclick="saveNoteModal('${c.id}')">Сохранить</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  const ta = document.getElementById('note-textarea');
+  if (ta) ta.focus();
+}
+
+function closeNoteModal() {
+  const m = document.getElementById('note-modal-backdrop');
+  if (m) m.remove();
+}
+
+function saveNoteModal(claimId) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  const ta = document.getElementById('note-textarea');
+  if (!c || !ta) return;
+  c.internalNote = ta.value.trim();
+  closeNoteModal();
+  render();
+  showToast('Заметка сохранена');
+}
+
+/* ============ CHAT ============ */
+function updateChatDraft(claimId, val) {
+  state.chatDraft[claimId] = val;
+}
+
+function sendChatMessage(claimId) {
+  const c = ALL_CLAIMS.find(x => x.id === claimId);
+  const text = state.chatDraft[claimId] ? state.chatDraft[claimId].trim() : '';
+  if (!c || !text) return;
+  if (!c.chat) c.chat = [];
+  const now = new Date();
+  const time = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}, ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  c.chat.push({ from: 'seller', text: text, time: time });
+  state.chatDraft[claimId] = '';
+  updateDrawerContent(c);
+  showToast('Сообщение отправлено покупателю');
+}
+
+function toggleAutoAdvance(el) {
+  state.autoAdvance = el.checked;
+  showToast(state.autoAdvance ? 'Автопереход включён' : 'Автопереход выключен');
+}
+
+/* ============ POPOVERS & FILTERS ============ */
+function togglePop(popId, btnEl) {
+  const pop = document.getElementById(popId);
+  const isVisible = pop.classList.contains('visible');
+  closeAllPopovers();
+  if (!isVisible) {
+    const rect = btnEl.getBoundingClientRect();
+    pop.style.top = `${rect.bottom + 6}px`;
+    pop.style.left = `${rect.left}px`;
+    pop.classList.add('visible');
+    const pr = pop.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 10) pop.style.left = (window.innerWidth - pr.width - 10) + 'px';
+  }
+}
+
+function closeAllPopovers() {
+  document.querySelectorAll('.popover').forEach(p => p.classList.remove('visible'));
+}
+
+window.addEventListener('click', (e) => {
+  if (!e.target.closest('.filter-btn') && !e.target.closest('.popover')) {
+    closeAllPopovers();
+  }
+});
+
+function pickFilterOpt(optEl) {
+  const key = optEl.getAttribute('data-key');
+  const val = optEl.getAttribute('data-val');
+  optEl.classList.toggle('on');
+  const arr = state.filters[key];
+  const idx = arr.indexOf(val);
+  if (idx > -1) arr.splice(idx, 1);
+  else arr.push(val);
+  render();
+}
+
+function pickFilterOptSingle(optEl) {
+  const key = optEl.getAttribute('data-key');
+  const val = optEl.getAttribute('data-val');
+  optEl.closest('.popover').querySelectorAll('.opt').forEach(o => o.classList.remove('on'));
+  optEl.classList.add('on');
+  state.filters[key] = val;
+  closeAllPopovers();
+  render();
+}
+
+function pickSort(optEl) {
+  const val = optEl.getAttribute('data-val');
+  optEl.closest('.popover').querySelectorAll('.opt').forEach(o => o.classList.remove('on'));
+  optEl.classList.add('on');
+  state.sortBy = val;
+  closeAllPopovers();
+  render();
+}
+
+/* ============ RULES & LIGHTBOX ============ */
+function openRules() {
+  document.getElementById('rules-modal').classList.add('visible');
+}
+function closeRules() {
+  document.getElementById('rules-modal').classList.remove('visible');
+}
+
+function openLightbox(url) {
+  const img = document.getElementById('lightbox-img');
+  img.src = url;
+  document.getElementById('lightbox-backdrop').classList.add('visible');
+}
+function closeLightbox() {
+  document.getElementById('lightbox-backdrop').classList.remove('visible');
+}
+
+/* ============ TOAST ============ */
+let toastTimer;
+function showToast(text) {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.classList.remove('show'); }, 2500);
+}
+
+/* ============ SEARCH & INIT ============ */
+function syncPickersFromState() {
+  document.querySelectorAll('.opt').forEach(o => {
+    const key = o.getAttribute('data-key');
+    const val = o.getAttribute('data-val');
+    let on = false;
+    if (key === 'period') on = state.filters.period === val;
+    else if (key === 'sort') on = state.sortBy === val;
+    else on = state.filters[key] && state.filters[key].includes(val);
+    o.classList.toggle('on', on);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const searchInput = document.querySelector('.search input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      renderTable();
+    });
+  }
+  syncPickersFromState();
+  render();
+});
+
+// Escape key — закрыть всё
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closeRules();
+    closeDecisionModal();
+    closeNoteModal();
+    closeAnalytics();
+    closeLightbox();
+    closeAllPopovers();
+    if (document.getElementById('claim-drawer').classList.contains('open')) closeDrawer();
+  }
+});
+</script>
+</body>
+</html>

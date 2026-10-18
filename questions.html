@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вопросы — Replio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --border: #e5e7eb; --border-strong: #d1d5db;
+    --text: #111827; --muted: #6b7280; --muted-2: #9ca3af;
+    --accent: #4f46e5; --accent-hover: #4338ca; --accent-soft: #eef2ff;
+    --warn: #f59e0b; --warn-soft: #fef3c7; --ok: #10b981; --ok-soft: #d1fae5;
+    --danger: #ef4444; --danger-soft: #fee2e2;
+    --purple: #5b21b6; --purple-soft: #f5f3ff; --purple-border: #8b5cf6;
+    --mp-wb: #8b5cf6; --mp-ym: #f59e0b; --mp-ozon: #3b82f6;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); font-size: 17px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .app { display: flex; min-height: 100vh; }
+
+  .sidebar { width: 240px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; flex-shrink: 0; }
+  .brand { padding: 18px 20px; font-weight: 600; font-size: 19px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); letter-spacing: -0.01em; }
+  .brand-mark { width: 28px; height: 28px; background: var(--text); color: #fff; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+  .nav { padding: 10px; flex: 1; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; font-size: 15.5px; cursor: pointer; margin-bottom: 2px; color: #374151; font-weight: 500; }
+  .nav-item:hover { background: #f3f4f6; color: var(--text); }
+  .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .nav-item .count { margin-left: auto; background: var(--danger); color: #fff; font-size: 12px; padding: 2px 8px; border-radius: 10px; font-weight: 600; line-height: 1.4; }
+  .nav-item .count.muted { background: #e5e7eb; color: #4b5563; }
+  .sidebar-bottom { padding: 14px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: #ddd6fe; color: #5b21b6; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .user-meta strong { font-size: 14.5px; display: block; font-weight: 600; line-height: 1.2; }
+  .user-meta small { color: var(--muted); font-size: 12.5px; }
+
+  .main { flex: 1; min-width: 0; }
+  .topbar { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 26px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 20; }
+  .page-title { font-size: 19px; font-weight: 600; white-space: nowrap; }
+  .search { flex: 1; max-width: 500px; position: relative; }
+  .search input { width: 100%; height: 42px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 0 16px 0 42px; font-size: 15px; background: #fafafa; outline: none; font-family: inherit; }
+  .search input:focus { border-color: var(--accent); background: #fff; }
+  .search::before { content: ""; position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E"); background-size: contain; opacity: 0.7; }
+  .btn { height: 42px; border: 1px solid var(--border-strong); background: var(--panel); border-radius: 10px; padding: 0 15px; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-family: inherit; color: var(--text); white-space: nowrap; font-weight: 500; }
+  .btn:hover { background: #f3f4f6; border-color: var(--muted); }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { background: var(--accent-hover); }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.ghost:hover { background: #f3f4f6; }
+  .btn.small { height: 36px; padding: 0 12px; font-size: 14px; border-radius: 8px; }
+
+  .auto-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; padding: 4px 8px; border-radius: 8px; font-weight: 500; }
+  .auto-toggle:hover { background: #f3f4f6; }
+  .toggle-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 20px; cursor: pointer; transition: 0.2s; }
+  .toggle-slider::before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; background: white; border-radius: 50%; transition: 0.2s; }
+  .toggle-switch input:checked + .toggle-slider { background: var(--accent); }
+  .toggle-switch input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  .filters-block { background: var(--panel); border-bottom: 1px solid var(--border); padding: 12px 26px; position: relative; z-index: 8; }
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; max-width: 1560px; margin: 0 auto; }
+  .filter-btn { height: 40px; padding: 0 14px; border: 1px solid var(--border-strong); border-radius: 10px; font-size: 15px; cursor: pointer; background: #fff; color: var(--text); font-family: inherit; display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+  .filter-btn:hover { background: #f3f4f6; }
+  .filter-btn.has-value { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .filter-btn .badge-count { background: var(--accent); color: #fff; font-size: 12.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+  .summary-inline { display: inline-flex; align-items: center; gap: 14px; padding: 0 14px; height: 40px; border-left: 1px solid var(--border); margin-left: 6px; flex-wrap: wrap; }
+  .summary-tag { display: inline-flex; align-items: center; gap: 5px; background: #f3f4f6; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; padding: 3px 9px; border-radius: 8px; }
+  .summary-tag::before { content: "≡"; font-size: 13px; }
+  .summary-item { display: inline-flex; align-items: baseline; gap: 6px; font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .summary-item b { color: var(--text); font-size: 15.5px; font-weight: 700; line-height: 1; }
+  .summary-item.ok b { color: var(--ok); }
+  .sort-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 6px 12px; border-radius: 8px; font-size: 14px; color: var(--text); user-select: none; margin-left: auto; font-weight: 500; }
+  .sort-toggle:hover { background: #f3f4f6; }
+  .sort-toggle .arrow { font-size: 12px; color: var(--muted); }
+
+  .popover { display: none; position: fixed; background: #fff; border: 1px solid var(--border); border-radius: 11px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); min-width: 260px; z-index: 1100; }
+  .popover.visible { display: block; }
+  .popover-head { font-size: 12.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 11px; }
+  .popover-options { display: flex; flex-direction: column; gap: 3px; }
+  .opt { padding: 9px 11px; border-radius: 7px; cursor: pointer; font-size: 15px; display: flex; align-items: center; gap: 9px; user-select: none; }
+  .opt:hover { background: #f3f4f6; }
+  .opt.on { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .opt .check { width: 19px; height: 19px; border-radius: 5px; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; color: transparent; }
+  .opt.on .check { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .opt .hint-count { margin-left: auto; background: #f3f4f6; color: #4b5563; font-size: 13px; font-weight: 600; padding: 2px 9px; border-radius: 9px; min-width: 26px; text-align: center; line-height: 1.4; }
+  .opt.on .hint-count { background: rgba(79, 70, 229, 0.15); color: var(--accent); }
+
+  .workspace { max-width: 1560px; margin: 0 auto; padding: 16px 26px 70px; }
+
+  /* ============== КОМПАКТНЫЙ СПИСОК ============== */
+  .compact-list { display: flex; flex-direction: column; gap: 6px; max-width: 1100px; margin: 0 auto; }
+  .compact-row { display: grid; grid-template-columns: 68px minmax(0, 1fr) auto; gap: 14px; align-items: stretch; background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; cursor: pointer; transition: all 0.12s; width: 100%; }
+  .compact-row:hover { background: #f9fafb; border-color: var(--border-strong); }
+  .compact-row.active { background: var(--accent-soft); border-color: var(--accent); }
+  .compact-row.row-mp-wb { box-shadow: inset 4px 0 0 var(--mp-wb); }
+  .compact-row.row-mp-ym { box-shadow: inset 4px 0 0 var(--mp-ym); }
+  .compact-row.row-mp-ozon { box-shadow: inset 4px 0 0 var(--mp-ozon); }
+
+  .mp-pill { display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.4px; padding: 3px 7px; border-radius: 6px; line-height: 1.2; white-space: nowrap; }
+  .mp-pill.mp-wb { background: var(--mp-wb); color: #fff; }
+  .mp-pill.mp-ym { background: #fef3c7; color: #92400e; }
+  .mp-pill.mp-ozon { background: var(--mp-ozon); color: #fff; }
+  
+  .filter-reset-btn {
+    background: transparent; border: none; color: var(--muted); font-size: 14px; cursor: pointer;
+    padding: 8px 12px; font-family: inherit; font-weight: 500; text-decoration: underline;
+    transition: color 0.15s; margin-left: 4px; white-space: nowrap;
+  }
+  .filter-reset-btn:hover { color: var(--text); }
+
+  /* Фото */
+  .cr-photo { width: 68px; height: 90px; border-radius: 8px; background: #fff; border: 1px solid var(--border); padding: 3px; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; position: relative; }
+  .cr-photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .cr-photo-fallback { display: none; font-size: 20px; opacity: 0.5; }
+  .cr-photo--empty { background: #f9fafb; border-style: dashed; }
+  .cr-photo--empty img { display: none; }
+  .cr-photo--empty .cr-photo-fallback { display: flex; }
+
+  /* Основная часть */
+  .cr-main { min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+  .cr-top { display: flex; align-items: center; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+  .cr-product { font-size: 14.5px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%; }
+  .cr-status { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 7px; white-space: nowrap; }
+  .cr-status--waiting { background: var(--warn-soft); color: #92400e; }
+  .cr-status--manager { background: var(--danger-soft); color: #991b1b; }
+  .cr-status--published { background: var(--ok-soft); color: #065f46; }
+  .cr-status--rejected { background: #f3f4f6; color: #4b5563; }
+  .cr-question { font-size: 14px; color: #374151; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Теги */
+  .cr-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .meta-tag { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-weight: 500; font-size: 12.5px; background: #f3f4f6; color: #4b5563; }
+  .meta-tag.brand-ragex { background: #f0fdfa; color: #0f766e; border: 1px solid #5eead4; font-weight: 600; }
+  .meta-tag.brand-holt { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; font-weight: 600; }
+  .meta-tag.brand-toros { background: #f9fafb; color: #4b5563; border: 1px solid #e5e7eb; font-weight: 600; }
+  .meta-tag.answered { background: #d1fae5; color: #065f46; font-weight: 600; }
+
+  /* Правая часть */
+  .cr-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: flex-start; gap: 4px; }
+  .cr-side-cat { font-size: 12px; color: var(--muted); font-weight: 500; text-align: right; line-height: 1.3; }
+  .cr-side-cat .code { display: inline-block; background: var(--purple-soft); color: var(--purple); font-weight: 700; padding: 2px 6px; border-radius: 5px; margin-right: 4px; font-size: 11px; }
+
+  /* ============== DRAWER ============== */
+  .drawer-backdrop { display: none; position: fixed; inset: 0; background: rgba(17,24,39,0.4); z-index: 1000; animation: fadeIn 0.2s; }
+  .drawer-backdrop.visible { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 760px; max-width: 100vw; background: #fff; box-shadow: -12px 0 40px rgba(0,0,0,0.15); display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.25s cubic-bezier(0.16,1,0.3,1); z-index: 1001; }
+  .drawer.open { transform: translateX(0); }
+  .drawer-head { padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; min-height: 52px; border-bottom: 1px solid var(--border); background: #fafbfc; }
+  .drawer-head-title { font-size: 14px; color: var(--muted); font-weight: 500; }
+  .drawer-close { background: transparent; border: none; cursor: pointer; font-size: 24px; width: 32px; height: 32px; border-radius: 8px; color: var(--muted); display: flex; align-items: center; justify-content: center; font-family: inherit; }
+  .drawer-close:hover { background: #f3f4f6; color: var(--text); }
+  .drawer-body { flex: 1; overflow-y: auto; }
+
+  .review { background: #fff; border: none; border-radius: 0; overflow: visible; }
+  .product-stats { display: flex; align-items: center; gap: 4px; padding: 8px 20px; background: #fafbfc; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--muted); flex-wrap: wrap; }
+  .product-stats .stat-link { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); background: transparent; border: none; cursor: pointer; font-family: inherit; font-size: 14px; padding: 3px 7px; border-radius: 6px; }
+  .product-stats .stat-link b { color: var(--text); font-weight: 600; }
+  .product-stats .stat-link:hover { background: var(--accent-soft); color: var(--accent); }
+  .product-stats .stat-link:hover b { color: var(--accent); }
+
+  .rev-grid { display: block; }
+  .rev-left { padding: 16px 20px 14px; min-width: 0; }
+  .rev-right { padding: 16px 20px 20px; background: #fafbfc; border-top: 1px solid var(--border); display: flex; flex-direction: column; }
+
+  .rev-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+  .photo { width: 80px; height: 106px; border-radius: 9px; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border); position: relative; padding: 4px; flex-shrink: 0; }
+  .photo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .photo .cr-photo-fallback { display: none; font-size: 24px; opacity: 0.5; }
+  .photo.cr-photo--empty { background: #f9fafb; border-style: dashed; }
+  .photo.cr-photo--empty img { display: none; }
+  .photo.cr-photo--empty .cr-photo-fallback { display: flex; }
+
+  .rev-head-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .product-name { font-size: 17.5px; font-weight: 600; line-height: 1.35; color: var(--text); }
+  .rev-head-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .rev-head-links { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; color: var(--muted); margin-top: 2px; }
+  .rev-head-links a { color: var(--accent); text-decoration: none; font-weight: 500; }
+  .rev-head-links a:hover { text-decoration: underline; }
+  .rev-head-links .no-link { color: var(--text); font-weight: 500; }
+  .meta-dot { color: var(--muted-2); }
+
+  .info-wrap { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+  .info-icon { display: inline-flex; width: 14px; height: 14px; border-radius: 50%; background: #e5e7eb; color: #4b5563; font-size: 9.5px; align-items: center; justify-content: center; font-weight: 600; cursor: help; font-style: normal; border: 1px solid #d1d5db; }
+  .info-wrap:hover .tooltip { display: block; }
+  .tooltip { display: none; position: absolute; top: calc(100% + 6px); left: 0; background: #111827; color: #fff; font-size: 12.5px; padding: 8px 12px; border-radius: 7px; max-width: 320px; line-height: 1.45; z-index: 20; box-shadow: 0 6px 16px rgba(0,0,0,0.2); }
+
+  .question-text { font-size: 17px; line-height: 1.55; color: #1f2937; padding: 14px 16px; background: #f9fafb; border-radius: 8px; border-left: 3px solid var(--accent); white-space: pre-wrap; }
+
+  .reply-head { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .text-btn { background: transparent; border: none; color: var(--accent); font-size: 14.5px; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; gap: 5px; padding: 6px 10px; border-radius: 6px; font-weight: 500; }
+  .text-btn:hover { background: var(--accent-soft); }
+  .feedback-trigger { background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 14.5px; font-family: inherit; cursor: pointer; padding: 6px 10px; border-radius: 7px; display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
+  .feedback-trigger:hover { background: #f3f4f6; color: var(--text); }
+  .feedback-trigger.open { background: var(--warn-soft); border-color: #fcd34d; color: #92400e; }
+  .feedback-popover { display: block; position: fixed; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 760px; max-width: calc(100vw - 20px); max-height: calc(100vh - 40px); overflow-y: auto; z-index: 1100; }
+  .feedback-popover textarea { width: 100%; min-height: 80px; border: 1px solid var(--border-strong); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; line-height: 1.5; resize: vertical; outline: none; background: #fff; color: var(--text); margin-bottom: 10px; }
+
+  .ai-detected { background: var(--purple-soft); border-left: 4px solid var(--purple); border-radius: 0 8px 8px 0; padding: 10px 12px; margin-bottom: 12px; font-size: 14px; line-height: 1.5; color: #4c1d95; }
+  .ai-detected .cat-line { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 14px; flex-wrap: wrap; }
+  .ai-detected .cat-badge { display: inline-block; background: var(--purple); color: #fff; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 7px; }
+  .ai-detected .cat-name { font-weight: 500; color: #4c1d95; }
+  .ai-detected .insight { font-size: 14px; line-height: 1.5; color: #4c1d95; margin: 0; }
+  .ai-detected .insight strong { color: var(--purple); font-weight: 600; }
+
+  .confidence { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 2px 9px; border-radius: 10px; font-weight: 500; }
+  .confidence .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .confidence.high { background: var(--ok-soft); color: #065f46; }
+  .confidence.high .dot { background: var(--ok); }
+  .confidence.mid { background: var(--warn-soft); color: #92400e; }
+  .confidence.mid .dot { background: var(--warn); }
+  .confidence.low { background: var(--danger-soft); color: #991b1b; }
+  .confidence.low .dot { background: var(--danger); }
+
+  .feedback-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .feedback-chip { background: #fff; border: 1px solid var(--border-strong); color: var(--text); padding: 6px 12px; border-radius: 18px; font-size: 13px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+  .feedback-chip:hover { background: #f3f4f6; }
+  .feedback-chip.on { background: var(--warn-soft); border-color: #f59e0b; color: #92400e; font-weight: 500; }
+  .feedback-chip .chip-x { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: rgba(0,0,0,0.08); font-size: 11px; line-height: 1; margin-left: 2px; }
+
+  .feedback-new-cat { background: var(--purple-soft); border-left: 3px solid var(--purple-border); border-radius: 0 8px 8px 0; padding: 9px 12px; margin-bottom: 10px; }
+  .feedback-new-cat-label { font-size: 11px; font-weight: 600; color: var(--purple); text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 7px; opacity: 0.85; }
+  .feedback-new-cat-options { display: flex; flex-wrap: wrap; gap: 6px; }
+  .feedback-cat-chip { background: #fff; border: 1px solid var(--border-strong); color: var(--text); padding: 5px 11px; border-radius: 16px; font-size: 13px; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .feedback-cat-chip:hover { background: #f3f4f6; }
+  .feedback-cat-chip.on { background: #ede9fe; border-color: var(--purple-border); color: #5b21b6; font-weight: 500; }
+  .feedback-cat-chip .code { font-family: ui-monospace, Menlo, monospace; font-weight: 700; font-size: 11.5px; background: #f3f4f6; padding: 1px 6px; border-radius: 5px; color: #4b5563; }
+  .feedback-cat-chip.on .code { background: var(--purple-border); color: #fff; }
+
+  .feedback-panel textarea { width: 100%; min-height: 60px; border: 1px solid var(--border-strong); border-radius: 8px; padding: 9px 12px; font-size: 14px; font-family: inherit; line-height: 1.5; resize: vertical; outline: none; background: #fff; color: var(--text); }
+  .feedback-actions { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+
+  .main-reply { width: 100%; min-height: 130px; border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 14px; font-size: 15.5px; font-family: inherit; line-height: 1.55; resize: vertical; outline: none; background: #fff; color: var(--text); }
+  .main-reply:focus { border-color: var(--accent); }
+  .main-reply[readonly] { background: #f9fafb; color: #4b5563; }
+  .main-reply.loading { background: linear-gradient(90deg, #f9fafb 0%, #eef2ff 50%, #f9fafb 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite; color: transparent; }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .reply-meta { display: flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 12.5px; color: var(--muted-2); min-height: 16px; }
+  .reply-meta .loading-hint { display: none; color: var(--accent); font-weight: 500; }
+  .reply-meta.loading .loading-hint { display: inline-flex; align-items: center; gap: 5px; }
+  .reply-meta.loading .char-counter { display: none; }
+  .reply-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .reply-actions .btn { flex: 1; justify-content: center; height: 42px; font-size: 15px; }
+  .btn-publish { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+  .btn-publish:hover { background: var(--accent-hover); }
+  .btn-private { background: #fff; color: var(--text); border-color: var(--border-strong); }
+  .btn-private:hover { background: #f3f4f6; }
+  .btn-reject { background: #fff; color: var(--danger); border-color: #fca5a5; }
+  .btn-reject:hover { background: #fef2f2; }
+
+  .answered-block { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 14px; background: var(--ok-soft); border: 1px solid #a7f3d0; border-radius: 10px; margin-top: 10px; }
+  .answered-block .icon { font-size: 20px; }
+  .answered-block .answered-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+  .answered-block .text { font-size: 14.5px; font-weight: 600; color: #065f46; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .answered-block .edited-hint { font-size: 12px; color: #059669; font-weight: 400; }
+  .answered-block .btn { height: 36px; font-size: 13.5px; padding: 0 14px; flex-shrink: 0; }
+  
+  .status-badge { display: inline-flex; padding: 2px 6px; border-radius: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; font-weight: 700; }
+  .status-badge.public { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+  .status-badge.private { background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; }
+  .answered-block.rejected { background: #f3f4f6; border-color: var(--border-strong); }
+  .answered-block.rejected .text { color: #4b5563; }
+
+  .modal-backdrop { display: none; position: fixed; inset: 0; background: rgba(17,24,39,0.5); z-index: 1200; align-items: flex-start; justify-content: center; padding: 60px 20px; overflow-y: auto; }
+  .modal-backdrop.visible { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 820px; box-shadow: 0 20px 50px rgba(0,0,0,0.25); max-height: 90vh; display: flex; flex-direction: column; }
+  .modal-head { padding: 18px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+  .modal-head h2 { font-size: 18px; font-weight: 600; flex: 1; }
+  .modal-close { background: transparent; border: none; cursor: pointer; font-size: 24px; padding: 4px 9px; border-radius: 6px; color: var(--muted); font-family: inherit; }
+  .modal-close:hover { background: #f3f4f6; }
+  .modal-body { padding: 20px 24px; overflow-y: auto; }
+
+  .rule-section { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .rule-section:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+  .rule-section h3 { font-size: 17px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 9px; }
+  .rule-section h3 .num { background: var(--accent); color: #fff; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .rule-section p { font-size: 15px; color: #374151; line-height: 1.6; margin-bottom: 8px; }
+  .rule-section ul { margin-left: 22px; font-size: 15px; line-height: 1.65; color: #374151; }
+  .rule-section ul li { margin-bottom: 5px; }
+  .rule-section .callout { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; font-size: 14.5px; color: #1e3a8a; margin: 10px 0; line-height: 1.55; }
+  
+    .refine-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Стили для шаблонов */
+  .templates-popover { display: flex; flex-direction: column; position: fixed; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); width: 420px; max-width: calc(100vw - 20px); max-height: calc(100vh - 20px); overflow: hidden; z-index: 1100; }
+  .tpl-header { flex-shrink: 0; font-size: 15.5px; font-weight: 600; margin-bottom: 10px; color: var(--text); }
+  .tpl-search { flex-shrink: 0; width: 100%; border: 1px solid var(--border-strong); border-radius: 8px; padding: 8px 12px; font-size: 13px; font-family: inherit; outline: none; margin-bottom: 10px; background: #fafafa; }
+  .tpl-search:focus { border-color: var(--accent); background: #fff; }
+  .tpl-list-scroll { flex: 0 0 auto; max-height: 240px; overflow-x: hidden; overflow-y: auto; margin-right: -8px; padding-right: 8px; }
+  .tpl-empty { text-align: center; color: var(--muted); font-size: 13px; padding: 20px 0; }
+  .tpl-row { display: flex; align-items: stretch; gap: 6px; margin-bottom: 6px; }
+  .tpl-btn { flex: 1; text-align: left; background: #f9fafb; border: 1px solid var(--border); padding: 9px 12px; border-radius: 8px; font-family: inherit; cursor: pointer; transition: 0.15s; min-width: 0; }
+  .tpl-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .tpl-btn .short { font-weight: 600; font-size: 13px; color: var(--text); display: block; margin-bottom: 2px; overflow-wrap: anywhere; word-break: break-word; }
+  .tpl-btn .full { font-size: 12px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; overflow-wrap: anywhere; word-break: break-word; }
+  .tpl-edit-btn { width: 36px; flex-shrink: 0; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; color: var(--muted); transition: 0.15s; }
+  .tpl-edit-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tpl-add-btn { display: block; width: 100%; flex-shrink: 0; text-align: center; background: transparent; border: 1px dashed var(--border-strong); color: var(--muted); padding: 10px; border-radius: 8px; font-family: inherit; font-size: 13px; cursor: pointer; margin-top: 8px; transition: 0.15s; font-weight: 500; }
+  .tpl-add-btn:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tpl-form { background: #f9fafb; border: 1px solid var(--accent); border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; overflow-wrap: anywhere; word-break: break-word; }
+  .tpl-form input, .tpl-form textarea { width: 100%; max-width: 100%; box-sizing: border-box; border: 1px solid var(--border-strong); border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none; background: #fff; margin-bottom: 8px; overflow-wrap: anywhere; word-break: break-word; }
+  .tpl-form textarea { min-height: 80px; resize: vertical; line-height: 1.4; }
+  .tpl-form-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .tpl-form-actions button { padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid var(--border-strong); background: #fff; }
+  .tpl-form-actions button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tpl-form-actions button.danger { color: var(--danger); border-color: #fca5a5; }
+
+  .empty-state { background: var(--panel); border: 1px dashed var(--border-strong); border-radius: 12px; padding: 40px; text-align: center; color: var(--muted); font-size: 15px; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #111827; color: #fff; padding: 12px 22px; border-radius: 10px; font-size: 14.5px; font-weight: 500; z-index: 2000; opacity: 0; pointer-events: none; transition: opacity 0.22s, transform 0.22s; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">r</span><span>replio</span></div>
+    <nav class="nav">
+      <div class="nav-item">📊 Обзор</div>
+      <div class="nav-item">💬 Отзывы <span class="count">3052</span></div>
+      <div class="nav-item">↩️ Возвраты <span class="count muted">22</span></div>
+      <div class="nav-item">💭 Чаты <span class="count">3341</span></div>
+      <div class="nav-item active">❓ Вопросы <span class="count">18</span></div>
+      <div class="nav-item">📈 Аналитика</div>
+    </nav>
+    <div class="sidebar-bottom">
+      <div class="avatar">ЕГ</div>
+      <div class="user-meta"><strong>Егор Г.</strong><small>ЛПР · Техника</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="page-title">Вопросы</div>
+      <div class="search"><input type="text" id="search-input" placeholder="Поиск по вопросу, товару или артикулу"></div>
+      <label class="auto-toggle" title="Автоматически открывать следующий вопрос после ответа">
+        <span class="toggle-switch">
+          <input type="checkbox" id="auto-advance-toggle" checked onchange="toggleAutoAdvance(this)">
+          <span class="toggle-slider"></span>
+        </span>
+        Автопереход
+      </label>
+      <button class="btn ghost" onclick="openRules()">ℹ️ Обновления</button>
+      <button class="btn ghost" onclick="render()">↻ Обновить</button>
+    </header>
+
+    <div class="filters-block">
+      <div class="filter-row">
+        <button class="filter-btn" id="btn-state" onclick="togglePop('pop-state', this)">Состояние: <span id="label-state" style="margin-left: 4px;">Без ответа</span></button>
+        <button class="filter-btn" id="btn-brand" onclick="togglePop('pop-brand', this)">Бренд <span class="badge-count" id="badge-brand" style="display:none">0</span></button>
+        <button class="filter-btn" id="btn-mp" onclick="togglePop('pop-mp', this)">Площадка <span class="badge-count" id="badge-mp" style="display:none">0</span></button>
+        <button class="filter-btn" id="btn-period" onclick="togglePop('pop-period', this)">Период: <span id="label-period" style="margin-left: 4px;">30 дней</span></button>
+        <button class="filter-reset-btn" onclick="resetAllFilters()">↺ Сбросить</button>
+        <div class="summary-inline">
+          <span class="summary-tag">По фильтру</span>
+          <span class="summary-item">Ждут ответа <b id="sum-waiting">0</b></span>
+          <span class="summary-item ok">Отвечено <b id="sum-answered">0</b></span>
+          <div class="sort-toggle" onclick="toggleSort()">
+            <span id="sortLabel">Сначала новые</span>
+            <span class="arrow">↓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="popover" id="pop-state">
+      <div class="popover-head">Состояние</div>
+      <div class="popover-options">
+        <div class="opt" data-key="state" data-val="unanswered" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>Без ответа <span class="hint-count"></span></div>
+        <div class="opt" data-key="state" data-val="published" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>Отвечено <span class="hint-count"></span></div>
+        <div class="opt" data-key="state" data-val="rejected" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>Отклонено <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-brand">
+      <div class="popover-head">Бренд</div>
+      <div class="popover-options">
+        <div class="opt" data-key="brand" data-val="Ragex" onclick="pickFilterOpt(this)"><span class="check">✓</span>Ragex <span class="hint-count"></span></div>
+        <div class="opt" data-key="brand" data-val="Торос / Либерти" onclick="pickFilterOpt(this)"><span class="check">✓</span>Торос / Либерти <span class="hint-count"></span></div>
+<div class="opt" data-key="brand" data-val="Holt" onclick="pickFilterOpt(this)"><span class="check">✓</span>Holt <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-mp">
+      <div class="popover-head">Площадка</div>
+      <div class="popover-options">
+        <div class="opt" data-key="marketplace" data-val="wb" onclick="pickFilterOpt(this)"><span class="check">✓</span>Wildberries <span class="hint-count"></span></div>
+        <div class="opt" data-key="marketplace" data-val="ym" onclick="pickFilterOpt(this)"><span class="check">✓</span>Яндекс Маркет <span class="hint-count"></span></div>
+      </div>
+    </div>
+    <div class="popover" id="pop-period">
+      <div class="popover-head">Период</div>
+      <div class="popover-options">
+        <div class="opt" data-key="period" data-val="7" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>7 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="30" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>30 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="90" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>90 дней <span class="hint-count"></span></div>
+        <div class="opt" data-key="period" data-val="all" onclick="pickFilterOptSingle(this)"><span class="check">✓</span>Всё время <span class="hint-count"></span></div>
+      </div>
+    </div>
+
+    <div class="workspace">
+      <div id="workspace-content"></div>
+    </div>
+  </main>
+</div>
+
+<div class="drawer-backdrop" id="drawer-backdrop" onclick="closeDrawer()"></div>
+<aside class="drawer" id="review-drawer">
+  <div class="drawer-head">
+    <span class="drawer-head-title">Вопрос покупателя</span>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</aside>
+
+<div class="modal-backdrop" id="rules-modal" onclick="if(event.target===this)closeRules()">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>ℹ️ Основные изменения</h2>
+      <button class="modal-close" onclick="closeRules()">×</button>
+    </div>
+    <div class="modal-body">
+
+
+      <div class="rule-section">
+        <h3><span class="num">0.1</span>Что не так с текущей версией</h3>
+        <p>Ниже — разбор реализации, которую выкатили как «готовую». Сравнивайте с прототипом.</p>
+
+        <h4>Макет «Мессенджера» вместо списка и карточки</h4>
+        <p>В текущей версии используется двухколоночный макет, как в чатах: слева список, справа переписка. Для вопросов это неудобно: менеджеру нужно быстро сканировать поток, а визуально список перегружен. В новой версии — <b>компактный список</b> по центру и выезжающая <b>карточка (drawer)</b> по клику. Менеджер работает потоком: открыл, ответил, автопереход к следующему.</p>
+        <div class="callout warn"><b>Почему это критично:</b> задача раздела — быстро обработать публичные вопросы. Мессенджер отвлекает на чтение, тогда как нам нужен конвейер для принятия решений.</div>
+
+        <h4>Полное отсутствие AI-слоя</h4>
+        <p>В текущей версии AI-ответ просто лежит в поле ввода. Менеджер не видит, насколько AI уверен в ответе, к какой категории отнёс вопрос и на чём основывался. Нет кнопок «Что не так?», «Перегенерировать», «С указанием». В новой версии это всё есть — AI помогает, а не просто подставляет текст.</p>
+
+        <h4>Нет кнопок выбора типа отправки</h4>
+        <p>В текущей версии используется переключатель (сегмент-таб) «Опубликовать ответ» / «Ответить автору» и одна кнопка «Отправить в Wildberries». В новой — три явные кнопки: 📢 <b>Опубликовать</b> (виден всем), 👁 <b>Только покупателю</b> (приватно) и 🚫 <b>Отклонить</b> (спам). Это исключает случайные ошибки при отправке.</p>
+
+        <h4>Нет автоперехода</h4>
+        <p>После ответа менеджеру приходится кликать обратно в список. Мы добавляем тумблер «Автопереход» в топбар — после отправки ответа автоматически открывается следующий неразобранный вопрос.</p>
+
+        <h4>Мало статусов</h4>
+        <p>Сейчас их всего два («Ждут ответа» / «Отвечены»). В новой версии четыре: <b>На проверке</b>, <b>Ждёт ответа</b>, <b>Нужен менеджер</b> (AI не уверен) и <b>Отвечено</b>. Менеджер сразу видит, где нужен он лично, а где AI справится сам.</p>
+
+        <div class="callout ok"><b>Итого:</b> текущая версия — это «чат». Новая — «конвейер по обработке публичных вопросов».</div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">1</span>Принципы работы</h3>
+        <ul>
+          <li><b>Вопрос видят все покупатели</b> — он публичный. Значит и ответ публичный: если он глупый — портит карточку всем.</li>
+          <li><b>Отвечать только по факту.</b> Не знаете ответа — не выдумывайте. Лучше «уточним у поставщика», чем неверные характеристики.</li>
+          <li><b>Не обещать того, чего нет.</b> «Есть в наличии», «привезём завтра» — только если это реально.</li>
+        </ul>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">2</span>Три кнопки в шапке ответа</h3>
+        <ul>
+          <li><b>❓ Что не так с ответом?</b> — обратная связь для AI. Открывается поповер, где указаны уверенность AI, категория вопроса и суть. Можно отметить чип (Не та категория / Тон и стиль / Неверные факты и т.д.) и написать комментарий. <b>Ответ не меняется.</b></li>
+          <li><b>✦ Перегенерировать</b> — другой вариант (нейтральный → короткий → мягкий → по кругу).</li>
+          <li><b>✎ С указанием</b> — своё указание для AI («упомяни модель», «будь короче»). Генерирует с учётом.</li>
+        </ul>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">3</span>Три кнопки отправки</h3>
+        <ul>
+          <li><b>📢 Опубликовать публично</b> — обычный режим, ответ виден всем.</li>
+          <li><b>👁 Только покупателю</b> — приватный ответ (персональные данные, конкретная ситуация).</li>
+          <li><b>🚫 Отклонить</b> — спам, реклама, не по теме.</li>
+        </ul>
+        <div class="callout"><b>По умолчанию — публично.</b> Приватный режим — точечно. Отклонение — исключение.</div>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">4</span>Автопереход</h3>
+        <p>После ответа автоматически открывается следующий вопрос из списка. Не надо возвращаться к списку, искать, где остановился. Тумблер в шапке.</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">5</span>Редактирование отправленных ответов</h3>
+        <p>Менеджер должен иметь возможность исправить отправленный ответ.</p>
+        <div class="callout">
+          <b>Ограничения WB API:</b> 
+          Редактирование возможно через <code>PATCH /api/v1/questions</code>. 
+          <b>Важно:</b> изменить текст можно <b>только 1 раз</b> и только в течение <b>60 дней</b> с момента первой публикации.
+        </div>
+        <p><b>Как это в UI:</b> после отправки показываем плашку «Ответ отправлен» с кнопкой «✎ Редактировать». Если ответ уже был отредактирован один раз (или прошло 60 дней) — кнопка исчезает, а под текстом появляется приписка «Был изменён 1 раз» или «Срок истёк».</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">6</span>Шаблоны ответов</h3>
+        <p>Кнопка <b>📋 Шаблоны</b> в шапке ответа. Открывается выпадающее окно, где можно выбрать готовый шаблон, отредактировать его или добавить новый. Сохраняется в <code>localStorage</code> браузера (для прототипа) — в v2+ уедет на бэкенд.</p>
+      </div>
+
+      <div class="rule-section">
+        <h3><span class="num">7</span>Пометки на будущее</h3>
+        <div class="callout future">
+          <b>📌 На будущее:</b> сейчас кнопка «✎ С указанием» открывает поле для промпта. В будущем — добавить шаблоны быстрых указаний для AI (например, добавь больше эмпатии), чтобы ускорить работу менеджеров.
+        </div>
+      </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ ШАБЛОНЫ ============ */
+const DEFAULT_TEMPLATES = [
+  { short: 'Уточним у поставщика', full: 'Добрый день! Спасибо за вопрос. Уточняем эту информацию у поставщика, вернёмся с ответом в ближайшее время.' },
+  { short: 'Нет в наличии', full: 'Добрый день! К сожалению, данного товара сейчас нет в наличии. Следите за обновлениями на карточке.' },
+  { short: 'Полный состав комплекта', full: 'Добрый день! В комплект входит: ... (перечислить). Полный список всегда указан в разделе «Комплектация» на карточке товара.' }
+];
+
+function loadTemplates() {
+  try {
+    const saved = localStorage.getItem('replio.questionTemplates');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [...DEFAULT_TEMPLATES];
+}
+
+function saveTemplates(list) {
+  try { localStorage.setItem('replio.questionTemplates', JSON.stringify(list)); } catch (e) {}
+}
+
+/* ============ КАРТИНКА WB ============ */
+const WB_THRESHOLDS = [[143,"01"],[287,"02"],[431,"03"],[719,"04"],[1007,"05"],[1061,"06"],[1115,"07"],[1169,"08"],[1313,"09"],[1601,"10"],[1655,"11"],[1919,"12"],[2045,"13"],[2189,"14"],[2405,"15"],[2621,"16"],[2837,"17"],[3053,"18"],[3269,"19"]];
+function getHostForVol(vol) { if (vol <= 3269) for (const [th, host] of WB_THRESHOLDS) if (vol <= th) return `basket-${host}`; return null; }
+function getFirstGuessUrl(nm) {
+  const vol = Math.floor(nm / 100000), part = Math.floor(nm / 1000);
+  const host = getHostForVol(vol);
+  if (host) return `https://${host}.wbbasket.ru/vol${vol}/part${part}/${nm}/images/c246x328/1.webp`;
+  const y = Math.max(1, Math.min(99, Math.floor((vol - 3269) / 1200) + 1));
+  return `https://mns-basket-cdn-${String(y).padStart(2, '0')}.geobasket.net/vol${vol}/part${part}/${nm}/images/c246x328/1.webp`;
+}
+function renderImg(nm) {
+  return `
+    <img src="${getFirstGuessUrl(nm)}" alt="" loading="lazy" onerror="this.style.display='none';this.parentNode.classList.add('cr-photo--empty')">
+    <div class="cr-photo-fallback">📦</div>
+  `;
+}
+
+function getEditDaysLeft(publishedAt) {
+  if (!publishedAt) return 0;
+  const limit = 60 * 86400e3; // 60 дней в миллисекундах
+  const elapsed = Date.now() - publishedAt;
+  const left = limit - elapsed;
+  return left > 0 ? Math.ceil(left / 86400e3) : 0;
+}
+
+function makeTimeRel(ms) {
+  const m = Math.floor(ms / 60000);
+  if (m < 60) return `${m} мин. назад`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} ч. назад`;
+  return `${Math.floor(h / 24)} дн. назад`;
+}
+
+function escapeHtml(t) {
+  return String(t || '').replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[m]);
+}
+
+/* ============ ДАННЫЕ ============ */
+const ALL_REVIEWS = [
+  {
+    id: 102, name: "Николай",
+    question: "Идёт ли в комплекте к кухонному комбайну R125-001 насадка для шинковки?",
+    product: "Кухонный комбайн многофункциональный R125-001, 1500 Вт",
+    article: "R125-001", nm: "759811459", brand: "Ragex", state: "checking",
+    date: "13 окт., 20:30", msAgo: 4 * 3600e3, marketplace: "wb",
+    categoryCode: "Q02", category: "Комплектация", confidence: 78,
+    insight: "Спрашивает про состав комплектации. AI не уверен — надо уточнить по карточке.",
+    stats: { total: 31 },
+    variants: {
+      neutral: "Добрый день! В комплект R125-001 входит основная чаша, нож для измельчения, насадка для шинковки и диск для тёрки. Полный список — в разделе «Комплектация» на карточке товара.",
+      short: "Да, насадка для шинковки входит в комплект.",
+      soft: "Николай, здравствуйте! Да, насадка для шинковки входит в комплект R125-001 — вместе с основной чашей, ножом и диском для тёрки. Полный состав всегда можно посмотреть в карточке товара."
+    }
+  },
+  {
+    id: 103, name: "Александр",
+    question: "Какая гарантия на аккумулятор TLP030K7? Если брак — куда обращаться?",
+    product: "Аккумулятор TLP030K7 для смартфона 3000 mAh, 3.85 V",
+    article: "0L-00069236", nm: "41765879", brand: "Торос / Либерти", state: "need_manager",
+    date: "13 окт., 08:15", msAgo: 17 * 3600e3, marketplace: "wb",
+    categoryCode: "Q03", category: "Гарантия и сервис", confidence: 65,
+    insight: "Вопрос про гарантию. AI не уверен в условиях — нужен менеджер для точного ответа.",
+    stats: { total: 14 },
+    variants: {
+      neutral: "Добрый день! На аккумулятор TLP030K7 действует гарантия 6 месяцев от производителя. При обнаружении производственного брака — обращайтесь в чат продавца, поможем с заменой или возвратом.",
+      short: "Гарантия 6 месяцев. По вопросам брака — в чат продавца.",
+      soft: "Александр, здравствуйте! На этот аккумулятор действует гарантия 6 месяцев. Если возникнет производственный брак — обязательно напишите нам в чат, поможем с заменой или возвратом."
+    }
+  },
+  {
+    id: 104, name: "Виктор",
+    question: "Есть ли в комплекте к R125-001 соковыжималка для цитрусовых?",
+    product: "Кухонный комбайн многофункциональный R125-001, 1500 Вт",
+    article: "R125-001", nm: "759811459", brand: "Ragex", state: "published",
+    date: "12 окт., 14:02", msAgo: 30 * 3600e3, marketplace: "wb",
+    categoryCode: "Q02", category: "Комплектация", confidence: 88,
+    insight: "Спрашивает про соковыжималку. Ответ опубликован менеджером.",
+	state: "published", answerMode: 'public', isEdited: false, publishedAt: Date.now() - 10 * 86400e3,
+    stats: { total: 31 },
+    variants: {
+      neutral: "Добрый день! Соковыжималки для цитрусовых в комплекте нет — комбайн поставляется с основной чашей, ножом для измельчения, насадкой для шинковки и диском для тёрки.",
+      short: "Соковыжималки в комплекте нет.",
+      soft: "Виктор, здравствуйте! К сожалению, соковыжималки для цитрусовых в комплекте нет — в базовой поставке идёт чаша, нож, насадка для шинковки и диск для тёрки."
+    }
+  },
+  {
+    id: 105, name: "Марина",
+    question: "Сколько ватт у фена-стайлера R805-002? В характеристиках написано 2000 Вт, но хочу уточнить.",
+    product: "Фен стайлер для волос с насадками 2 в 1 2000 Вт",
+    article: "R805-002", nm: "543827562", brand: "Ragex", state: "checking",
+    date: "13 окт., 18:00", msAgo: 6 * 3600e3, marketplace: "ym",
+    categoryCode: "Q05", category: "Другое", confidence: 95,
+    insight: "Уточняет характеристику, которая есть в карточке. Простой ответ.",
+    stats: { total: 18 },
+    variants: {
+      neutral: "Добрый день! Мощность фена-стайлера R805-002 — 2000 Вт, как указано в характеристиках на карточке.",
+      short: "2000 Вт, как указано в карточке.",
+      soft: "Марина, здравствуйте! Да, мощность именно 2000 Вт — как в характеристиках на карточке."
+    }
+  },
+  {
+    id: 106, name: "Дмитрий",
+    question: "Успею ли получить доставку до 20 октября, если закажу сегодня?",
+    product: "Плата разъема питания с микрофоном смартфона Redmi Note 7S",
+    article: "0L-MG-WF577", nm: "183911462", brand: "Торос / Либерти", 
+	state: "published", answerMode: 'public', isEdited: false, publishedAt: Date.now() - 65 * 86400e3,
+    date: "11 окт., 09:20", msAgo: 50 * 3600e3, marketplace: "ym",
+    categoryCode: "Q04", category: "Доставка", confidence: 72,
+    insight: "Вопрос про сроки доставки. AI не уверен — зависит от региона.",
+    stats: { total: 8 },
+    variants: {
+      neutral: "Добрый день! Сроки доставки зависят от вашего региона и загруженности склада. Точную дату вы увидите при оформлении заказа — она рассчитывается автоматически.",
+      short: "Срок зависит от региона, точная дата — при оформлении.",
+      soft: "Дмитрий, здравствуйте! Сроки доставки зависят от региона и склада — точную дату вы увидите при оформлении заказа. Если срочно — выберите доставку в пункт выдачи, обычно быстрее."
+    }
+  }
+];
+
+const FEEDBACK_CHIPS = ["Не та категория", "Тон и стиль", "Неверные факты", "Так писать нельзя", "Длина ответа", "Другое"];
+const NEW_CATEGORIES = [
+  { code: "Q01", name: "Совместимость" },
+  { code: "Q02", name: "Комплектация" },
+  { code: "Q03", name: "Гарантия и сервис" },
+  { code: "Q04", name: "Доставка" },
+  { code: "Q05", name: "Другое" }
+];
+const STATE_LABELS = { checking: "Ждёт ответа", need_manager: "Нужен менеджер", published: "Отвечено", rejected: "Отклонено" };
+const MP_LABELS = { wb: "Wildberries", ym: "Яндекс Маркет", ozon: "Ozon" };
+const MP_SHORT = { wb: "WB", ym: "YM", ozon: "OZ" };
+const VARIANT_ORDER = ['neutral', 'short', 'soft'];
+
+/* ============ СОСТОЯНИЕ ============ */
+const state = {
+  filters: { state: 'unanswered', brand: [], marketplace: ['wb', 'ym'], period: '30' },
+  sort: 'desc',
+  autoAdvance: true,
+  feedback: {},
+  variantIndex: {},
+  workingAI: new Set(),
+  drawerId: null,
+  editedReplies: {},
+  templates: loadTemplates(),
+  editingTemplateIdx: null,
+  templateTargetId: null,
+  templateSearchQuery: ''
+};
+
+/* ============ УТИЛИТЫ ============ */
+function articleRule(article) {
+  if (!article) return { href: null };
+  if (/^0L-/i.test(article)) return { href: `https://liberti.ru/search/?q=${encodeURIComponent(article)}` };
+  if (/^\d{6}$/.test(article)) return { href: `https://vnoutbuke.ru/catalog/?q=${encodeURIComponent(article)}` };
+  return { href: null };
+}
+function confidenceClass(score) { return score >= 90 ? 'high' : score >= 70 ? 'mid' : 'low'; }
+
+function applyFilters(items) {
+  const periodMs = { "7": 7*86400e3, "30": 30*86400e3, "90": 90*86400e3, "all": Infinity }[state.filters.period] || Infinity;
+  return items.filter(r => {
+    if (r.msAgo > periodMs) return false;
+    if (state.filters.state === 'unanswered' && (r.state === 'published' || r.state === 'rejected')) return false;
+    if (state.filters.state === 'published' && r.state !== 'published') return false;
+    if (state.filters.state === 'rejected' && r.state !== 'rejected') return false;
+    if (state.filters.brand.length && !state.filters.brand.includes(r.brand)) return false;
+    if (state.filters.marketplace.length && !state.filters.marketplace.includes(r.marketplace)) return false;
+    return true;
+  });
+}
+function getVisibleReviews() {
+  const filtered = applyFilters(ALL_REVIEWS);
+  const sorted = [...filtered].sort((a, b) => state.sort === 'desc' ? a.msAgo - b.msAgo : b.msAgo - a.msAgo);
+  const searchInput = document.getElementById('search-input');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  if (!q) return sorted;
+  return sorted.filter(r =>
+    (r.question || '').toLowerCase().includes(q) ||
+    (r.product || '').toLowerCase().includes(q) ||
+    (r.article || '').toLowerCase().includes(q) ||
+    (r.name || '').toLowerCase().includes(q) ||
+    (r.nm || '').toLowerCase().includes(q)
+  );
+}
+function getCurrentVariant(reviewId) {
+  const idx = state.variantIndex[reviewId] || 0;
+  return VARIANT_ORDER[idx % VARIANT_ORDER.length];
+}
+
+function countByFilter(field, value) {
+  const periodMs = { "7": 7*86400e3, "30": 30*86400e3, "90": 90*86400e3, "all": Infinity }[state.filters.period] || Infinity;
+  return ALL_REVIEWS.filter(r => {
+    if (field !== 'period' && r.msAgo > periodMs) return false;
+    if (field === 'state') {
+      if (value === 'unanswered') return r.state !== 'published' && r.state !== 'rejected';
+      if (value === 'published') return r.state === 'published';
+      if (value === 'rejected') return r.state === 'rejected';
+    }
+    if (field === 'brand') return r.brand === value;
+    if (field === 'marketplace') return r.marketplace === value;
+    if (field === 'period') {
+      const ms = { '7': 7*86400e3, '30': 30*86400e3, '90': 90*86400e3, 'all': Infinity }[value];
+      return r.msAgo <= ms;
+    }
+    return false;
+  }).length;
+}
+
+function getSummaryCounts() {
+  const searchInput = document.getElementById('search-input');
+  const q = searchInput ? searchInput.value.trim().toLowerCase() : '';
+  const periodMs = { "7": 7*86400e3, "30": 30*86400e3, "90": 90*86400e3, "all": Infinity }[state.filters.period] || Infinity;
+  let base = ALL_REVIEWS.filter(r => {
+    if (r.msAgo > periodMs) return false;
+    if (state.filters.brand.length && !state.filters.brand.includes(r.brand)) return false;
+    if (state.filters.marketplace.length && !state.filters.marketplace.includes(r.marketplace)) return false;
+    return true;
+  });
+  if (q) {
+    base = base.filter(r =>
+      (r.question || '').toLowerCase().includes(q) ||
+      (r.product || '').toLowerCase().includes(q) ||
+      (r.article || '').toLowerCase().includes(q) ||
+      (r.name || '').toLowerCase().includes(q) ||
+      (r.nm || '').toLowerCase().includes(q)
+    );
+  }
+  return {
+    waiting: base.filter(r => r.state !== 'published' && r.state !== 'rejected').length,
+    answered: base.filter(r => r.state === 'published').length
+  };
+}
+
+/* ============ РЕНДЕР КАРТОЧКИ (для drawer) ============ */
+function renderCard(r) {
+  const art = articleRule(r.article);
+  const artHtml = art.href ? `<a href="${art.href}" target="_blank" rel="noreferrer">${r.article}</a>` : `<span class="no-link">${r.article}</span>`;
+  const timeRel = makeTimeRel(r.msAgo);
+  const fb = state.feedback[r.id] || { chips: new Set(), text: '', newCategory: null };
+  const isWrongCat = fb.chips.has('Не та категория');
+
+  const chipsHtml = FEEDBACK_CHIPS.map(chip => {
+    const on = fb.chips.has(chip);
+    if (chip === 'Не та категория' && on && fb.newCategory) {
+      return `<button type="button" class="feedback-chip on" data-chip="${chip}" onclick="toggleFeedbackChip(${r.id}, '${chip}')">Не та категория → ${fb.newCategory}<span class="chip-x" onclick="event.stopPropagation(); clearWrongCategory(${r.id})">×</span></button>`;
+    }
+    return `<button type="button" class="feedback-chip ${on ? 'on' : ''}" data-chip="${chip}" onclick="toggleFeedbackChip(${r.id}, '${chip}')">${chip}</button>`;
+  }).join('');
+
+  const catChipsHtml = NEW_CATEGORIES.map(c => {
+    const on = fb.newCategory === `${c.code} ${c.name}`;
+    return `<button type="button" class="feedback-cat-chip ${on ? 'on' : ''}" data-val="${c.code} ${c.name}" onclick="selectNewCategory(${r.id}, '${c.code}', '${c.name}')"><span class="code">${c.code}</span>${c.name}</button>`;
+  }).join('');
+
+  const stats = r.stats;
+  const dashboardHtml = stats ? `
+    <div class="product-stats">
+      <button class="stat-link" onclick="showToast('Список всех вопросов по товару')"><b>${stats.total}</b> вопросов</button>
+      <button class="stat-link" onclick="showToast('📈 Аналитика по ${r.nm}')">📈 Аналитика</button>
+    </div>
+  ` : '';
+
+  const confCls = confidenceClass(r.confidence);
+  const variantKey = getCurrentVariant(r.id);
+  const variants = r.variants || {};
+  const edited = state.editedReplies[r.id];
+  const currentText = edited !== undefined ? edited : (variants[variantKey] || variants.neutral || '');
+  const isWorking = state.workingAI.has(r.id);
+  const isAnswered = r.state === 'published';
+  const isRejected = r.state === 'rejected';
+
+  const brandCls = r.brand === 'Ragex' ? 'brand-ragex' : (r.brand === 'Holt' ? 'brand-holt' : 'brand-toros');
+
+  return `
+  <div class="review" data-id="${r.id}">
+    ${dashboardHtml}
+    <div class="rev-grid">
+      <div class="rev-left">
+        <div class="rev-head">
+          <div class="photo">${renderImg(r.nm)}</div>
+          <div class="rev-head-info">
+            <div class="product-name">${escapeHtml(r.product)}</div>
+            <div class="rev-head-meta">
+              <span class="mp-pill mp-${r.marketplace}">${MP_SHORT[r.marketplace]}</span>
+              <span class="meta-tag ${brandCls}">${escapeHtml(r.brand)}</span>
+              <span class="meta-tag">👤 ${escapeHtml(r.name)}</span>
+              <span class="meta-tag">🕒 ${timeRel} (${r.date})</span>
+              ${isAnswered ? `<span class="meta-tag answered">✓ Отвечено</span>` : ''}
+              ${isRejected ? `<span class="meta-tag">🚫 Отклонено</span>` : ''}
+            </div>
+            <div class="rev-head-links">
+              <span class="info-wrap">Артикул: ${artHtml}</span>
+              <span class="meta-dot">·</span>
+              <span class="info-wrap">NM: <a href="https://www.wildberries.ru/catalog/${r.nm}/detail.aspx" target="_blank" rel="noreferrer">${r.nm}</a></span>
+            </div>
+          </div>
+        </div>
+        <div class="question-text">${escapeHtml(r.question)}</div>
+      </div>
+      <div class="rev-right">
+        <div class="reply-head">
+          <button class="feedback-trigger" onclick="event.stopPropagation(); openFeedbackPopover(${r.id}, this)">❓ Что не так с ответом?</button>
+          <button class="text-btn" onclick="regenerate(${r.id})">✦ Перегенерировать</button>
+          <button class="text-btn" onclick="event.stopPropagation(); refine(${r.id}, this)">✎ С указанием</button>
+          <button class="text-btn" onclick="event.stopPropagation(); openTemplatesPopover(${r.id}, this)">📋 Шаблоны</button>
+        </div>
+        <textarea class="main-reply ${isWorking ? 'loading' : ''}" id="reply-${r.id}" oninput="onReplyInput(${r.id}, this.value)" ${isAnswered || isRejected || isWorking ? 'readonly' : ''}>${escapeHtml(currentText)}</textarea>
+        <div class="reply-meta ${isWorking ? 'loading' : ''}">
+          <span class="loading-hint">✦ AI генерирует ответ…</span>
+          <span class="char-counter" id="count-${r.id}">${currentText.length} / 5000</span>
+        </div>
+        ${isAnswered ? (() => {
+          const daysLeft = getEditDaysLeft(r.publishedAt);
+          const canEdit = !r.isEdited && daysLeft > 0;
+          return `
+          <div class="answered-block" id="answered-box-${r.id}">
+            <span class="icon">✓</span>
+            <div class="answered-info">
+              <span class="text">
+                Ответ отправлен 
+                ${r.answerMode === 'public' ? '<span class="status-badge public">📢 Публично</span>' : '<span class="status-badge private">👁 Только покупателю</span>'}
+              </span>
+              <span class="edited-hint">
+                ${r.isEdited ? 'Был изменён 1 раз (редактирование недоступно)' : (daysLeft > 0 ? `Доступно редактирование: ${daysLeft} дн.` : 'Срок редактирования (60 дней) истёк')}
+              </span>
+            </div>
+            ${canEdit ? `<button class="btn" onclick="startEditReply(${r.id})">✎ Редактировать</button>` : ''}
+            <button class="btn primary" onclick="advanceToNext(${r.id})">Следующий →</button>
+          </div>
+        `})() : isRejected ? `
+          <div class="answered-block rejected">
+            <span class="icon">🚫</span>
+            <span class="text">Вопрос отклонён</span>
+            <button class="btn" onclick="advanceToNext(${r.id})">Следующий →</button>
+          </div>
+        ` : `
+          <div class="reply-actions">
+            <button class="btn btn-publish" onclick="approve(${r.id}, 'public')">📢 Опубликовать</button>
+            <button class="btn btn-private" onclick="approve(${r.id}, 'private')">👁 Только покупателю</button>
+            <button class="btn btn-reject" onclick="approve(${r.id}, 'reject')">🚫 Отклонить</button>
+          </div>
+        `}
+      </div>
+    </div>
+  </div>
+  `;
+}
+
+/* ============ КОМПАКТНАЯ СТРОКА ============ */
+function renderCompactRow(r, opts = {}) {
+  const timeRel = makeTimeRel(r.msAgo);
+  const statusCls = r.state === 'published' ? 'published' : (r.state === 'rejected' ? 'rejected' : (r.state === 'need_manager' ? 'manager' : 'waiting'));
+  const statusLabel = STATE_LABELS[r.state];
+  const isActive = opts.active;
+
+  const brandCls = r.brand === 'Ragex' ? 'brand-ragex' : (r.brand === 'Holt' ? 'brand-holt' : 'brand-toros');
+
+  return `
+    <div class="compact-row row-mp-${r.marketplace} ${isActive ? 'active' : ''}" data-id="${r.id}" onclick="openReview(${r.id})">
+      <div class="cr-photo">${renderImg(r.nm)}</div>
+      <div class="cr-main">
+        <div class="cr-top">
+          <span class="cr-product">${escapeHtml(r.product)}</span>
+          <span class="cr-status cr-status--${statusCls}">${statusLabel}</span>
+        </div>
+        <div class="cr-question">${escapeHtml(r.question)}</div>
+        <div class="cr-meta">
+          <span class="mp-pill mp-${r.marketplace}">${MP_SHORT[r.marketplace]}</span>
+
+          <span class="meta-tag ${brandCls}">${escapeHtml(r.brand)}</span>
+		  <span class="meta-tag">Артикул ${escapeHtml(r.article)}</span>
+          <span class="meta-tag">👤 ${escapeHtml(r.name)}</span>
+          <span class="meta-tag">🕒 ${timeRel}</span>
+        </div>
+      </div>
+      <div class="cr-side">
+        <div class="cr-side-cat"><span class="code">${r.categoryCode}</span> ${r.category}</div>
+        <div class="confidence ${confidenceClass(r.confidence)}"><span class="dot"></span>Уверенность ${r.confidence}%</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ============ ГЛАВНЫЙ RENDER ============ */
+function render() {
+  updateFilterBadges();
+  updateFilterCounts();
+  const reviews = getVisibleReviews();
+  const summary = getSummaryCounts();
+
+  document.getElementById('sum-waiting').textContent = summary.waiting;
+  document.getElementById('sum-answered').textContent = summary.answered;
+
+  if (reviews.length === 0) {
+    document.getElementById('workspace-content').innerHTML = `<div class="empty-state">Ничего не найдено. <br><button class="btn small" style="margin-top:12px" onclick="resetAllFilters()">Сбросить фильтры</button></div>`;
+  } else {
+    document.getElementById('workspace-content').innerHTML = `<div class="compact-list">${reviews.map(r => renderCompactRow(r, { active: state.drawerId === r.id })).join('')}</div>`;
+  }
+
+  if (state.drawerId) {
+    const r = ALL_REVIEWS.find(x => x.id === state.drawerId);
+    if (r) {
+      document.getElementById('drawer-body').innerHTML = renderCard(r);
+    } else {
+      closeDrawer();
+    }
+  }
+}
+
+function updateFilterBadges() {
+  const setBadge = (id, count) => {
+    const btn = document.getElementById('btn-' + id);
+    const badge = document.getElementById('badge-' + id);
+    if (!btn || !badge) return;
+    if (count > 0) { badge.textContent = count; badge.style.display = ''; btn.classList.add('has-value'); }
+    else { badge.style.display = 'none'; btn.classList.remove('has-value'); }
+  };
+  setBadge('brand', state.filters.brand.length);
+  setBadge('mp', state.filters.marketplace.length === 2 ? 0 : state.filters.marketplace.length);
+
+  // Обновляем текст кнопки "Состояние"
+  const stateLabelEl = document.getElementById('label-state');
+  if (stateLabelEl) {
+    const stateMap = { unanswered: 'Без ответа', published: 'Отвечено', rejected: 'Отклонено' };
+    stateLabelEl.textContent = stateMap[state.filters.state] || 'Без ответа';
+  }
+
+  // Обновляем текст кнопки "Период"
+  const periodLabelEl = document.getElementById('label-period');
+  if (periodLabelEl) {
+    const periodMap = { '7': '7 дней', '30': '30 дней', '90': '90 дней', 'all': 'Всё время' };
+    periodLabelEl.textContent = periodMap[state.filters.period] || '30 дней';
+  }
+}
+
+function updateFilterCounts() {
+  document.querySelectorAll('.opt').forEach(o => {
+    const k = o.dataset.key, v = o.dataset.val;
+    let hint = o.querySelector('.hint-count');
+    if (!hint) { hint = document.createElement('span'); hint.className = 'hint-count'; o.appendChild(hint); }
+    hint.textContent = countByFilter(k, v);
+  });
+}
+
+/* ============ ОТКРЫТИЕ DRAWER ============ */
+function openReview(id) {
+  state.drawerId = id;
+  const r = ALL_REVIEWS.find(x => x.id === id);
+  if (!r) return;
+  document.getElementById('drawer-backdrop').classList.add('visible');
+  document.getElementById('review-drawer').classList.add('open');
+  render();
+  document.getElementById('drawer-body').scrollTop = 0;
+}
+
+function closeDrawer() {
+  state.drawerId = null;
+  document.getElementById('drawer-backdrop').classList.remove('visible');
+  document.getElementById('review-drawer').classList.remove('open');
+  render();
+}
+
+function toggleAutoAdvance(el) {
+  state.autoAdvance = el.checked;
+  showToast(state.autoAdvance ? 'Автопереход включён' : 'Автопереход выключен');
+}
+
+/* ============ ОБРАБОТЧИКИ КАРТОЧКИ ============ */
+function buildFeedbackPopoverHTML(id) {
+  const r = ALL_REVIEWS.find(x => x.id === id);
+  if (!r) return '';
+  const fb = state.feedback[id] || { chips: new Set(), text: '', newCategory: null };
+  const isWrongCat = fb.chips.has('Не та категория');
+  const confCls = confidenceClass(r.confidence);
+  
+  const chipsHtml = FEEDBACK_CHIPS.map(chip => {
+    const on = fb.chips.has(chip);
+    if (chip === 'Не та категория' && on && fb.newCategory) {
+      return `<button type="button" class="feedback-chip on" data-chip="${chip}" onclick="event.stopPropagation(); toggleFeedbackChip(${id}, '${chip}')">Не та категория → ${fb.newCategory}<span class="chip-x" title="Сбросить" onclick="event.stopPropagation(); clearWrongCategory(${id})">×</span></button>`;
+    }
+    return `<button type="button" class="feedback-chip ${on ? 'on' : ''}" data-chip="${chip}" onclick="event.stopPropagation(); toggleFeedbackChip(${id}, '${chip}')">${chip}</button>`;
+  }).join('');
+
+  const catChipsHtml = NEW_CATEGORIES.map(c => {
+    const on = fb.newCategory === `${c.code} ${c.name}`;
+    return `<button type="button" class="feedback-cat-chip ${on ? 'on' : ''}" data-val="${c.code} ${c.name}" onclick="event.stopPropagation(); selectNewCategory(${id}, '${c.code}', '${c.name}')"><span class="code">${c.code}</span>${c.name}</button>`;
+  }).join('');
+
+  return `
+    <div class="ai-detected">
+      <span class="ai-detected-head"><span class="confidence ${confCls}"><span class="dot"></span>Уверенность ${r.confidence}%</span></span>
+      <div class="cat-line"><span class="cat-badge">${r.categoryCode}</span><span class="cat-name">${r.category}</span></div>
+      <p class="insight"><strong>Суть:</strong> ${r.insight}</p>
+    </div>
+    <div class="feedback-chips" id="fb-chips-${id}">${chipsHtml}</div>
+    <div class="feedback-new-cat" id="fb-newcat-${id}" style="${isWrongCat && !fb.newCategory ? '' : 'display:none'}">
+      <span class="feedback-new-cat-label">Выберите правильную категорию</span>
+      <div class="feedback-new-cat-options">${catChipsHtml}</div>
+    </div>
+    <textarea placeholder="Что не так и как должно быть. Хватит одного предложения" oninput="updateFeedbackText(${id}, this.value)">${fb.text || ''}</textarea>
+    <div class="feedback-actions">
+      <button class="btn primary small" onclick="event.stopPropagation(); submitFeedback(${id})">Отправить</button>
+      <button class="btn small" onclick="event.stopPropagation(); closeFeedbackPopover()">Отмена</button>
+    </div>
+  `;
+}
+
+function openFeedbackPopover(id, btn) {
+  closeFeedbackPopover();
+  closeRefine();
+  const pop = document.createElement('div');
+  pop.className = 'feedback-popover';
+  pop.id = 'feedback-popover';
+  pop.innerHTML = buildFeedbackPopoverHTML(id);
+  document.body.appendChild(pop);
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const width = 760;
+    const height = pop.offsetHeight;
+    let left = rect.left + rect.width / 2 - width / 2;
+    if (left + width > window.innerWidth - 10) left = window.innerWidth - width - 10;
+    if (left < 10) left = 10;
+    let top = rect.top - height - 8;
+    if (top < 10) top = rect.bottom + 8;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    btn.classList.add('open');
+  }
+}
+
+function closeFeedbackPopover() {
+  document.getElementById('feedback-popover')?.remove();
+  document.querySelectorAll('.feedback-trigger.open').forEach(b => b.classList.remove('open'));
+}
+
+function refreshFeedbackPopover(id) {
+  const pop = document.getElementById('feedback-popover');
+  if (!pop) return;
+  const top = pop.style.top, left = pop.style.left;
+  pop.innerHTML = buildFeedbackPopoverHTML(id);
+  pop.style.top = top; pop.style.left = left;
+}
+
+function toggleFeedbackChip(id, chip) {
+  if (!state.feedback[id]) state.feedback[id] = { chips: new Set(), text: '', newCategory: null };
+  const fb = state.feedback[id];
+  if (chip === 'Не та категория') {
+    if (fb.chips.has(chip) && !fb.newCategory) {
+      fb.chips.delete(chip);
+    } else if (fb.chips.has(chip) && fb.newCategory) {
+      fb.newCategory = null;
+    } else {
+      fb.chips.add(chip);
+    }
+  } else {
+    if (fb.chips.has(chip)) fb.chips.delete(chip); else fb.chips.add(chip);
+  }
+  refreshFeedbackPopover(id);
+}
+
+function selectNewCategory(id, code, name) {
+  if (!state.feedback[id]) state.feedback[id] = { chips: new Set(), text: '', newCategory: null };
+  const fb = state.feedback[id];
+  const val = `${code} ${name}`;
+  if (fb.newCategory === val) { fb.newCategory = null; }
+  else { fb.newCategory = val; fb.chips.add('Не та категория'); }
+  refreshFeedbackPopover(id);
+}
+
+function clearWrongCategory(id) {
+  const fb = state.feedback[id];
+  if (!fb) return;
+  fb.newCategory = null;
+  fb.chips.delete('Не та категория');
+  refreshFeedbackPopover(id);
+}
+
+function updateFeedbackText(id, text) {
+  if (!state.feedback[id]) state.feedback[id] = { chips: new Set(), text: '', newCategory: null };
+  state.feedback[id].text = text;
+}
+
+function submitFeedback(id) {
+  const fb = state.feedback[id] || { chips: new Set(), text: '', newCategory: null };
+  if (!fb.chips.size && !fb.text.trim()) { showToast('Отметьте пункт или напишите комментарий'); return; }
+  closeFeedbackPopover();
+  state.feedback[id] = { chips: new Set(), text: '', newCategory: null };
+  showToast('Обратная связь отправлена');
+}
+
+function regenerate(id) {
+  const r = ALL_REVIEWS.find(x => x.id === id);
+  if (!r || !r.variants) return;
+  state.variantIndex[id] = ((state.variantIndex[id] || 0) + 1) % VARIANT_ORDER.length;
+  delete state.editedReplies[id];
+  state.workingAI.add(id);
+  render();
+  setTimeout(() => { state.workingAI.delete(id); render(); }, 700);
+}
+
+function onReplyInput(id, value) {
+  state.editedReplies[id] = value;
+  const c = document.getElementById('count-' + id);
+  if (c) c.textContent = value.length + ' / 5000';
+}
+
+let activeRefineId = null;
+function refine(id, btn) {
+  closeRefine();
+  closeFeedbackPopover(); // Закрываем окно "Что не так", если оно открыто
+  activeRefineId = id;
+  const pop = document.createElement('div');
+  pop.className = 'popover visible';
+  pop.id = 'refine-popover';
+  pop.style.cssText = 'width: 440px; padding: 16px;';
+  pop.innerHTML = `
+    <div style="font-size:15.5px; font-weight:600; margin-bottom:6px;">Указание для AI</div>
+    <div style="font-size:13.5px; color:var(--muted); margin-bottom:11px; line-height:1.45;">Например: «упомяни конкретную модель», «будь короче», «не обещай наличие».</div>
+    <textarea id="refine-ta" style="width:100%; min-height:90px; border:1px solid var(--border-strong); border-radius:8px; padding:10px 12px; font-size:14px; font-family:inherit; resize:vertical; outline:none; margin-bottom:11px;" placeholder="Что учесть при генерации..."></textarea>
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button class="btn small" onclick="closeRefine()">Отмена</button>
+      <button class="btn primary small" onclick="applyRefine()">Сгенерировать</button>
+    </div>`;
+  document.body.appendChild(pop);
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const width = 440;
+    
+    // Выравниваем ровно по центру кнопки
+    let left = rect.left + rect.width / 2 - width / 2;
+    if (left + width > window.innerWidth - 10) left = window.innerWidth - width - 10;
+    if (left < 10) left = 10;
+    
+    // Всегда открываем вниз
+    let top = rect.bottom + 6;
+    pop.style.top = top + 'px';
+    pop.style.left = left + 'px';
+    
+    // Только если не влезает по высоте экрана — открываем вверх
+    const pr = pop.getBoundingClientRect();
+    if (pr.bottom > window.innerHeight - 10) {
+      pop.style.top = (rect.top - pr.height - 6) + 'px';
+    }
+    
+    btn.classList.add('open');
+  }
+  pop.querySelector('#refine-ta').focus();
+}
+function closeRefine() { document.getElementById('refine-popover')?.remove(); activeRefineId = null; }
+function applyRefine() {
+  const ta = document.getElementById('refine-ta');
+  if (ta && activeRefineId && ta.value.trim()) {
+    const replyTa = document.getElementById('reply-' + activeRefineId);
+    if (replyTa) {
+      replyTa.value += '\n\n(Учтено: ' + ta.value.trim() + ')';
+      onReplyInput(activeRefineId, replyTa.value);
+    }
+    showToast('AI учтёт указание');
+  }
+  closeRefine();
+}
+
+function approve(id, mode) {
+  const r = ALL_REVIEWS.find(x => x.id === id);
+  if (!r) return;
+  const ta = document.getElementById('reply-' + id);
+  if (mode !== 'reject' && (!ta || !ta.value.trim())) { showToast('Поле ответа пустое'); return; }
+  
+  if (mode === 'reject') {
+    r.state = 'rejected';
+    showToast('🚫 Вопрос отклонён');
+  } else {
+    r.state = 'published';
+    r.answerMode = mode;
+    r.isEdited = false;
+    r.publishedAt = Date.now(); // Засекаем время для таймера 60 дней
+    showToast(mode === 'public' ? '📢 Опубликовано публично' : '👁 Отправлено только покупателю');
+  }
+  // ...
+  render();
+  if (state.autoAdvance) {
+    setTimeout(() => advanceToNext(id), 250);
+  }
+}
+
+function startEditReply(id) {
+  const ta = document.getElementById('reply-' + id);
+  if (ta) {
+    ta.readOnly = false;
+    ta.focus();
+  }
+  const box = document.getElementById('answered-box-' + id);
+  if (box) {
+    box.innerHTML = `
+      <span class="icon">✎</span>
+      <div class="answered-info">
+        <span class="text">Редактирование ответа <span class="edited-hint">(доступно только 1 раз)</span></span>
+      </div>
+      <button class="btn primary" onclick="saveEditReply(${id})">Сохранить</button>
+      <button class="btn" onclick="render()">Отмена</button>
+    `;
+  }
+}
+
+function saveEditReply(id) {
+  const r = ALL_REVIEWS.find(x => x.id === id);
+  if (r) {
+    r.isEdited = true;
+    r.publishedAt = Date.now(); // Обновляем дату публикации на случай будущих проверок
+  }
+  showToast('Ответ обновлён. Повторное редактирование недоступно.');
+  render();
+}
+
+function openTemplatesPopover(id, btn) {
+  closeTemplatesPopover();
+  closeRefine();
+  closeFeedbackPopover();
+  state.templateTargetId = id;
+  state.editingTemplateIdx = null;
+  state.templateSearchQuery = '';
+
+  const pop = document.createElement('div');
+  pop.className = 'templates-popover';
+  pop.id = 'templates-popover';
+  pop.innerHTML = `
+    <div class="tpl-header">Шаблоны ответов</div>
+    <div id="tpl-form-slot"></div>
+    <input class="tpl-search" id="tpl-search-input" type="text" placeholder="Найти шаблон..." oninput="filterTemplates(this.value)">
+    <div class="tpl-list-scroll" id="tpl-list-container"></div>
+    <button class="tpl-add-btn" id="tpl-add-btn" onclick="event.stopPropagation(); addTemplate()">+ Новый шаблон</button>
+  `;
+  document.body.appendChild(pop);
+  renderTemplatePopover();
+
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const width = 420;
+    let left = rect.left + rect.width / 2 - width / 2;
+    if (left + width > window.innerWidth - 10) left = window.innerWidth - width - 10;
+    if (left < 10) left = 10;
+    pop.style.left = left + 'px';
+    pop.style.top = (rect.bottom + 6) + 'px';
+
+    requestAnimationFrame(() => {
+      const pr = pop.getBoundingClientRect();
+      if (pr.bottom > window.innerHeight - 10) {
+        pop.style.top = Math.max(10, window.innerHeight - pr.height - 10) + 'px';
+      }
+      const pr2 = pop.getBoundingClientRect();
+      if (pr2.top < 10) pop.style.top = '10px';
+    });
+  }
+}
+
+function closeTemplatesPopover() {
+  document.getElementById('templates-popover')?.remove();
+  state.templateTargetId = null;
+}
+
+function renderTemplatePopover() {
+  const formSlot = document.getElementById('tpl-form-slot');
+  const listSlot = document.getElementById('tpl-list-container');
+  const searchInput = document.getElementById('tpl-search-input');
+  const addBtn = document.getElementById('tpl-add-btn');
+  if (!formSlot || !listSlot) return;
+
+  if (state.editingTemplateIdx !== null) {
+    const idx = state.editingTemplateIdx;
+    const t = state.templates[idx] || { short: '', full: '' };
+    formSlot.innerHTML = `
+      <div class="tpl-form">
+        <input type="text" id="tpl-edit-short" value="${escapeHtml(t.short)}" placeholder="Короткое название" maxlength="60">
+        <textarea id="tpl-edit-full" placeholder="Текст шаблона">${escapeHtml(t.full)}</textarea>
+        <div class="tpl-form-actions">
+          <button class="danger" onclick="event.stopPropagation(); deleteTemplate(${idx})">Удалить</button>
+          <button onclick="event.stopPropagation(); cancelTemplateEdit()">Отмена</button>
+          <button class="primary" onclick="event.stopPropagation(); saveTemplateEdit(${idx})">Сохранить</button>
+        </div>
+      </div>
+    `;
+    if (searchInput) searchInput.style.display = 'none';
+    listSlot.style.display = 'none';
+    if (addBtn) addBtn.style.display = 'none';
+    setTimeout(() => document.getElementById('tpl-edit-short')?.focus(), 10);
+  } else {
+    formSlot.innerHTML = '';
+    if (searchInput) searchInput.style.display = '';
+    listSlot.style.display = '';
+    if (addBtn) addBtn.style.display = '';
+    listSlot.innerHTML = renderTemplateList();
+  }
+}
+
+function renderTemplateList() {
+  const q = (state.templateSearchQuery || '').toLowerCase().trim();
+  const visible = state.templates
+    .map((t, idx) => ({ t, idx }))
+    .filter(({ t }) => {
+      if (!q) return true;
+      return t.short.toLowerCase().includes(q) || t.full.toLowerCase().includes(q);
+    });
+
+  if (visible.length === 0) return `<div class="tpl-empty">Ничего не найдено</div>`;
+
+  return visible.map(({ t, idx }) => `
+    <div class="tpl-row">
+      <button class="tpl-btn" onclick="event.stopPropagation(); applyTemplate(\`${escapeHtml(t.full).replace(/`/g, '\\`')}\`)">
+        <span class="short">${escapeHtml(t.short)}</span>
+        <span class="full">${escapeHtml(t.full)}</span>
+      </button>
+      <button class="tpl-edit-btn" onclick="event.stopPropagation(); editTemplate(${idx})" title="Редактировать">✏️</button>
+    </div>
+  `).join('');
+}
+
+function filterTemplates(q) {
+  state.templateSearchQuery = q;
+  renderTemplatePopover();
+}
+
+function applyTemplate(text) {
+  if (!state.templateTargetId) return;
+  const ta = document.getElementById('reply-' + state.templateTargetId);
+  if (ta) {
+    ta.value = text;
+    onReplyInput(state.templateTargetId, text);
+  }
+  closeTemplatesPopover();
+  showToast('Шаблон применён');
+}
+
+function editTemplate(idx) {
+  state.editingTemplateIdx = idx;
+  renderTemplatePopover();
+}
+
+function addTemplate() {
+  state.templates.push({ short: '', full: '' });
+  state.editingTemplateIdx = state.templates.length - 1;
+  state.templateSearchQuery = '';
+  const s = document.getElementById('tpl-search-input');
+  if (s) s.value = '';
+  renderTemplatePopover();
+}
+
+function cancelTemplateEdit() {
+  const idx = state.editingTemplateIdx;
+  if (idx !== null && idx >= 0) {
+    const t = state.templates[idx];
+    if (t && !t.short && !t.full) state.templates.splice(idx, 1);
+  }
+  state.editingTemplateIdx = null;
+  renderTemplatePopover();
+}
+
+function saveTemplateEdit(idx) {
+  const input = document.getElementById('tpl-edit-short');
+  const ta = document.getElementById('tpl-edit-full');
+  if (!input || !ta) return;
+  const short = input.value.trim();
+  const full = ta.value.trim();
+  if (!short || !full) { showToast('Заполните название и текст'); return; }
+  state.templates[idx] = { short, full };
+  saveTemplates(state.templates);
+  state.editingTemplateIdx = null;
+  renderTemplatePopover();
+  showToast('Шаблон сохранён');
+}
+
+function deleteTemplate(idx) {
+  state.templates.splice(idx, 1);
+  saveTemplates(state.templates);
+  state.editingTemplateIdx = null;
+  renderTemplatePopover();
+  showToast('Шаблон удалён');
+}
+
+function advanceToNext(currentId) {
+  const current = ALL_REVIEWS.find(r => r.id === currentId);
+  if (!current) { closeDrawer(); return; }
+  const visible = getVisibleReviews().filter(r => r.id !== currentId);
+  const next = visible.find(r => state.sort === 'desc' ? r.msAgo > current.msAgo : r.msAgo < current.msAgo);
+  if (next) {
+    openReview(next.id);
+  } else {
+    closeDrawer();
+    showToast('Все вопросы разобраны 🎉');
+  }
+}
+
+/* ============ ФИЛЬТРЫ ============ */
+function pickFilterOpt(el) {
+  const key = el.dataset.key, val = el.dataset.val;
+  const arr = state.filters[key];
+  const idx = arr.indexOf(val);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(val);
+  el.classList.toggle('on', idx < 0);
+  render();
+}
+function pickFilterOptSingle(el) {
+  const key = el.dataset.key, val = el.dataset.val;
+  state.filters[key] = val;
+  el.closest('.popover').querySelectorAll('.opt').forEach(o => o.classList.remove('on'));
+  el.classList.add('on');
+  render();
+}
+function resetAllFilters() {
+  state.filters = { state: 'unanswered', brand: [], marketplace: ['wb', 'ym'], period: '30' };
+  document.querySelectorAll('.opt').forEach(o => {
+    const k = o.dataset.key, v = o.dataset.val;
+    let on = false;
+    if (k === 'state') on = state.filters.state === v;
+    else if (k === 'period') on = state.filters.period === v;
+    else if (Array.isArray(state.filters[k])) on = state.filters[k].includes(v);
+    o.classList.toggle('on', on);
+  });
+  render();
+}
+function toggleSort() {
+  state.sort = state.sort === 'desc' ? 'asc' : 'desc';
+  document.getElementById('sortLabel').textContent = state.sort === 'desc' ? 'Сначала новые' : 'Сначала старые';
+  render();
+}
+function togglePop(id, btn) {
+  const pop = document.getElementById(id);
+  const wasOpen = pop.classList.contains('visible');
+  document.querySelectorAll('.popover').forEach(p => p.classList.remove('visible'));
+  closeRefine();
+  if (!wasOpen) {
+    const rect = btn.getBoundingClientRect();
+    pop.classList.add('visible');
+    pop.style.top = (rect.bottom + 6) + 'px';
+    pop.style.left = rect.left + 'px';
+    const pr = pop.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 10) pop.style.left = (window.innerWidth - pr.width - 10) + 'px';
+  }
+}
+
+/* ============ RULES / TOAST ============ */
+function openRules() { document.getElementById('rules-modal').classList.add('visible'); }
+function closeRules() { document.getElementById('rules-modal').classList.remove('visible'); }
+
+let toastTimer;
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+/* ============ ГЛОБАЛЬНЫЕ ============ */
+document.addEventListener('click', e => {
+  if (e.target.closest('[onclick*="refine"]') || e.target.closest('#refine-popover')) return;
+  if (e.target.closest('[onclick*="openFeedbackPopover"]') || e.target.closest('.feedback-popover')) return;
+  if (e.target.closest('[onclick*="openTemplatesPopover"]') || e.target.closest('.templates-popover')) return;
+  
+  if (!e.target.closest('.filter-btn') && !e.target.closest('.popover')) {
+    document.querySelectorAll('.popover').forEach(p => p.classList.remove('visible'));
+  }
+  closeRefine();
+  closeFeedbackPopover();
+  closeTemplatesPopover();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeRules(); closeRefine();
+    document.querySelectorAll('.popover').forEach(p => p.classList.remove('visible'));
+    if (state.drawerId) closeDrawer();
+  }
+});
+
+document.getElementById('search-input').addEventListener('input', () => {
+  render();
+});
+
+/* ============ INIT ============ */
+document.querySelector('#pop-state .opt[data-val="unanswered"]').classList.add('on');
+document.querySelector('#pop-period .opt[data-val="30"]').classList.add('on');
+document.querySelector('#pop-mp .opt[data-val="wb"]').classList.add('on');
+document.querySelector('#pop-mp .opt[data-val="ym"]').classList.add('on');
+render();
+</script>
+</body>
+</html>
